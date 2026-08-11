@@ -52,7 +52,7 @@ npx nuhuh         # 在任何项目里，检验你最近一次会话的真实"�
 ```
 
 nuhuh 读取磁盘上已有的 Claude Code 会话日志，并以 Codex rollout 作为回退。
-它从最后一条消息中提取完成声明，逐条对照你的工作树验证。不需要账号，
+它从最后一条消息中提取完成声明，逐条对照你的工作树验证。MIT 许可，不需要账号，
 不需要 API key，**没有任何模型调用**。任何数据都不会离开你的机器。
 
 ## 门禁模式，让"完成"不再是一种感觉
@@ -86,13 +86,19 @@ npx nuhuh init
 目前声明匹配支持英语和韩语。模式是[一个数据文件](src/claims/patterns.ts)，
 所以增加语言是一个 PR，不是一个 fork。
 
-## 为什么不直接让 LLM 来检查
+## 为什么不找另一个模型来审查
 
-因为有人测过了，它做不到。在 5 个裁判模型和 5 种提示策略下，LLM 裁判检测
-假完成的能力只有 [**AUROC 0.54 到 0.65**](https://arxiv.org/abs/2606.09863)，
-接近抛硬币，因为它们"依赖自信的收尾语气这类表面完成信号，而不是经过验证的
+流行的答案是再挂一个 LLM 当对抗审查员。它有三个测试运行器没有的问题。
+
+| | 第二个 LLM 审查员 | nuhuh |
+| --- | --- | --- |
+| 每次检查的代价 | 每次弹回都是一整轮审查的 token | 零 |
+| 判定 | 意见，在这类失败上只有 [AUROC 0.54 到 0.65](https://arxiv.org/abs/2606.09863) | 退出码，完全确定性 |
+| 知道何时收手 | 不知道，审 25 轮还能挑出新毛病 | 知道，声明要么验证通过要么不通过，同样的失败重复出现就终止循环 |
+
+裁判模型失败是因为它们"依赖自信的收尾语气这类表面完成信号，而不是经过验证的
 状态变化"。测试运行器检测失败套件的能力是 1.0。nuhuh 就是一个穿着 Stop 钩子
-的测试运行器。**验证路径零 LLM 调用，完全确定性，同样的会话进去，同样的收据出来。**
+的测试运行器。
 
 读 diff 的方案有相反的盲区。把 diff 当作事实的审查者看不到 diff 之外的遗漏，
 比如没设的环境变量、没跑的迁移、没在监听的服务。而这些恰恰是 nuhuh 去戳的声明。
@@ -125,11 +131,22 @@ npx nuhuh init
 - [backcheck](https://github.com/VectorInstitute/backcheck) 和 [agent-receipts](https://github.com/0xelitesystem/agent-receipts) 审计*转录*里说发生了什么。nuhuh 检验*现在*什么是真的。
 - Claude Code 自带的 `/verify` 把 diff 当作事实并明确不运行测试。nuhuh 为 diff 之外的 bug 而存在。
 
+## 它会在你的机器上运行什么
+
+任何会执行命令的工具都值得在安装前审计一遍，所以这里是完整清单。
+
+- 它唯一会执行的命令是你项目自己清单里的 test、build、lint 脚本，外加 git 读取。绝不执行来自智能体文本的任何东西
+- 唯一的网络访问是收据里可见的 localhost 接口探测。没有遥测，不回传任何数据
+- 门禁不可能无限循环。它尊重钩子自身的递归标志，弹回上限 3 次，同样的失败连续出现两次立即收手。每条拒绝消息只有两行，弹回的上下文开销很低
+- `nuhuh init` 会先备份你的配置文件，`nuhuh uninit` 干净地还原钩子条目。想锁版本就用 `npx nuhuh@0.1.3`
+
 ## 环境要求
 
-Node 20 或更高。Claude Code 会话从 `~/.claude/projects` 读取，Codex rollout
+Node 20 或更高，macOS、Linux 和 Windows 都可以（三个平台都在 CI 里跑）。
+Claude Code 会话从 `~/.claude/projects` 读取，Codex rollout
 从 `~/.codex` 读取。新鲜的测试和构建运行使用项目自己的 `package.json` 脚本，
-pnpm、yarn 和 bun 通过锁文件识别。
+pnpm、yarn 和 bun 通过锁文件识别。pytest、go test、cargo test 和 gradle
+的识别在 [issue 4](https://github.com/sjh9714/nuhuh/issues/4) 里跟踪。
 
 ## License
 

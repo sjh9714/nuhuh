@@ -35,6 +35,17 @@ describe('decideGate', () => {
     expect(decision.reason).toContain('does not exist');
   });
 
+  test('keeps the block reason to two lines so repeated bounces stay cheap', async () => {
+    // Hook practitioners' top complaint: a chatty deny reason on a hook that
+    // fires repeatedly becomes a recurring context tax.
+    const { cwd, transcriptPath, stateDir } = setup(
+      'Done. I created `src/a.ts` and wrote `src/b.ts` and added `src/c.ts`.',
+    );
+    const decision = await decideGate({ ...base, cwd, transcriptPath, stateDir });
+    expect(decision.action).toBe('block');
+    expect(decision.reason?.split('\n').length).toBeLessThanOrEqual(2);
+  });
+
   test('allows when every claim verifies', async () => {
     const { cwd, transcriptPath, stateDir } = setup('Done. I created `src/real.ts`.');
     mkdirSync(join(cwd, 'src'));

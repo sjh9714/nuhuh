@@ -120,16 +120,16 @@ export async function decideGate(input: GateInput): Promise<GateDecision> {
   });
   logDecision('block', state.bounces + 1);
 
-  const evidence = failed
-    .map((v) => `- you said "${v.claim.quote}" and reality says ${v.evidence}`)
-    .join('\n');
+  // A chatty deny reason on a hook that fires repeatedly becomes a recurring
+  // context tax, so the reason stays at two lines: the first failure with its
+  // evidence, a count of the rest, and the ground rules.
+  const first = failed[0];
+  const more = failed.length > 1 ? ` (${failed.length - 1} more failed, run \`npx nuhuh\` for the full receipt)` : '';
   return {
     action: 'block',
     reason:
-      `nuhuh checked your completion claims against reality and ${failed.length} of them failed.\n` +
-      `${evidence}\n` +
-      `Fix the work until these claims are actually true, then finish. ` +
-      `Do not weaken or delete checks to make them pass.`,
+      `nuhuh re-ran your claim "${first?.claim.quote}" and reality says ${first?.evidence}${more}.\n` +
+      `Fix the work until the claims are actually true, then finish. Do not weaken or delete checks to make them pass.`,
     receipt,
   };
 }

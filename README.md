@@ -54,8 +54,8 @@ npx nuhuh         # check the real last "Done" of YOUR latest session, in any pr
 
 nuhuh reads the Claude Code session logs already on your disk, with Codex
 rollouts as fallback. It extracts the completion claims from the last message
-and verifies each one against your working tree. No account, no API key,
-**no model call**. Nothing leaves your machine.
+and verifies each one against your working tree. MIT licensed, no account,
+no API key, **no model call**. Nothing leaves your machine.
 
 ## Gate mode, where "Done" stops being a feeling
 
@@ -89,15 +89,20 @@ You stop being the person who re-runs the tests after the agent swears it did.
 Claims are matched in English and Korean today. The patterns are
 [a data file](src/claims/patterns.ts), so adding a language is a PR, not a fork.
 
-## Why not just ask an LLM to check
+## Why not just have another model review it
 
-Because it was measured, and it cannot. Across 5 judge models and 5 prompt
-strategies, LLM judges detected false completions at
-[**AUROC 0.54 to 0.65**](https://arxiv.org/abs/2606.09863), near coin-flip,
-because they "rely on surface completion proxies like confident closing
-language rather than verified state changes." A test runner detects a failing
-suite at 1.0. nuhuh is a test runner wearing a Stop hook. **Zero LLM calls in
-the verification path, deterministic, same session in means same receipt out.**
+The popular answer is a second LLM as an adversarial reviewer. It has three
+problems that a test runner does not.
+
+| | second LLM as reviewer | nuhuh |
+| --- | --- | --- |
+| tokens per check | a full review, every bounce | zero |
+| verdict | opinion, [AUROC 0.54 to 0.65](https://arxiv.org/abs/2606.09863) on this failure class | exit codes, deterministic |
+| knows when to stop | no, it can find new flaws 25 rounds in a row | yes, claims either verify or they don't, and repeated identical failures end the loop |
+
+The judges fail because they "rely on surface completion proxies like
+confident closing language rather than verified state changes." A test runner
+detects a failing suite at 1.0. nuhuh is a test runner wearing a Stop hook.
 
 The diff-reading alternative has the opposite blind spot. A reviewer that
 reads the diff as ground truth cannot see the miss that lives outside the
@@ -139,11 +144,30 @@ Verifying agents is not a new wish. The mechanism is the difference.
 - [backcheck](https://github.com/VectorInstitute/backcheck) and [agent-receipts](https://github.com/0xelitesystem/agent-receipts) audit what the *transcript* says happened. nuhuh checks what *is*, now.
 - Claude Code's own `/verify` reads the diff as ground truth and explicitly does not run tests. nuhuh exists for the bugs outside the diff.
 
+## What it runs on your machine
+
+Worth auditing before you install anything that executes commands, so here is
+the complete list.
+
+- The only commands it ever executes are the test, build and lint scripts from
+  your project's own manifests, plus git reads. Nothing from the agent's text
+  is ever executed.
+- The only network access is the localhost probe for an endpoint claim you can
+  see in the receipt. No telemetry, no phoning home.
+- The gate cannot loop forever. It respects the hook's own recursion flag,
+  caps bounces at 3, and stops immediately when the same claim fails the same
+  way twice. Each deny message is two lines, so bounces stay cheap in context.
+- `nuhuh init` backs up your settings file first, and `nuhuh uninit` restores
+  the hook entry cleanly. Pin a version with `npx nuhuh@0.1.3` if you prefer.
+
 ## Requirements
 
-Node 20 or newer. Claude Code sessions are read from `~/.claude/projects` and
-Codex rollouts from `~/.codex`. Fresh test and build runs use your project's
-own `package.json` scripts, with pnpm, yarn and bun detected by lockfile.
+Node 20 or newer, on macOS, Linux or Windows (all three run in CI). Claude
+Code sessions are read from `~/.claude/projects` and Codex rollouts from
+`~/.codex`. Fresh test and build runs use your project's own `package.json`
+scripts, with pnpm, yarn and bun detected by lockfile. Runner detection for
+pytest, go test, cargo test and gradle is tracked in
+[issue 4](https://github.com/sjh9714/nuhuh/issues/4).
 
 ## License
 
