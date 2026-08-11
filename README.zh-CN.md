@@ -83,7 +83,7 @@ npx nuhuh init
 | "localhost:3000 的接口能用" | 真的去调用它（永远只探测本地主机） |
 | "我在 .env 里设置了 `DATABASE_URL`" | 只检查键是否存在，值永远不会进入收据 |
 
-目前声明匹配支持英语和韩语。模式是[一个数据文件](src/claims/patterns.ts)，
+声明匹配支持英语、韩语、日语和简体中文。模式是[一个数据文件](src/claims/patterns.ts)，
 所以增加语言是一个 PR，不是一个 fork。
 
 ## 为什么不找另一个模型来审查

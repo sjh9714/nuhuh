@@ -86,7 +86,7 @@ You stop being the person who re-runs the tests after the agent swears it did.
 | "the endpoint at localhost:3000 works" | actually calls it (local hosts only, ever) |
 | "I set `DATABASE_URL` in .env" | checks the key exists, and the value never enters the receipt |
 
-Claims are matched in English and Korean today. The patterns are
+Claims are matched in English, Korean, Japanese and Simplified Chinese. The patterns are
 [a data file](src/claims/patterns.ts), so adding a language is a PR, not a fork.
 
 ## Why not just have another model review it
