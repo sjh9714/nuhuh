@@ -9,7 +9,8 @@ const ROOT = join(__dirname, '..');
 describe('bench runner (mock harness)', () => {
   test('measures a false done and nuhuh catches it', () => {
     if (!existsSync(join(ROOT, 'dist', 'index.js'))) {
-      execFileSync('npm', ['run', 'build'], { cwd: ROOT, stdio: 'pipe' });
+      // shell:true so Windows resolves npm.cmd; the command is a fixed string
+      execFileSync('npm', ['run', 'build'], { cwd: ROOT, stdio: 'pipe', shell: true });
     }
     const out = join(mkdtempSync(join(tmpdir(), 'nuhuh-bench-')), 'r.jsonl');
     execFileSync(
