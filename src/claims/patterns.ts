@@ -14,7 +14,7 @@ export interface SentencePattern {
 
 export const TESTS_PASS: SentencePattern = {
   match: [
-    /\b(?:all\s+)?(?:\d+\s+)?tests?\s+(?:are\s+)?pass(?:es|ing|ed)?\b/i,
+    /\b(?:all\s+)?(?:\d+\s+)?tests?\s+(?:are\s+|still\s+|now\s+|all\s+)?pass(?:es|ing|ed)?\b/i,
     /\btest\s+suite\s+(?:is\s+)?(?:pass(?:es|ing|ed)?|green)\b/i,
     /\b(?:npm|yarn|pnpm|bun)\s+(?:run\s+)?test[\w:-]*\s+pass(?:es|ed|ing)?\b/i,
     // ko: 테스트(가/는/를/도) ... 통과/성공 (bounded gap so it stays inside the clause)
@@ -41,6 +41,19 @@ export const BUILD_PASS: SentencePattern = {
   negate: [
     /\b(?:not|never|should|won't|wont|don't|dont|doesn't|doesnt|didn't|didnt|can't|cant|couldn't|couldnt|fail)/i,
     /실패|못했|안\s*(?:됩|된|돼)|하지\s*(?:않|못)/,
+  ],
+};
+
+export const LINT_PASS: SentencePattern = {
+  match: [
+    /\blint(?:er|ing)?(?:\s+(?:check|script|run))?\s+(?:pass(?:es|ed)?|passing|succeeds?|is\s+clean)/i,
+    /\bpass(?:es|ed)?\s+(?:the\s+)?lint(?:er)?(?:\s+check)?\b/i,
+    // ko: 린트(검사가) 통과
+    /린트.{0,12}?(?:통과|성공)/,
+  ],
+  negate: [
+    /\b(?:not|never|should|won't|wont|don't|dont|doesn't|doesnt|didn't|didnt|can't|cant|couldn't|couldnt|fail|would)\b/i,
+    /않|못|실패|안\s*(?:됩|된|돼)/,
   ],
 };
 

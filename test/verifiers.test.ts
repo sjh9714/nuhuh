@@ -110,6 +110,26 @@ describe('tests-pass verifier', () => {
   });
 });
 
+describe('lint-pass verifier', () => {
+  test('fails when a fresh lint run exits non-zero', async () => {
+    const cwd = tmpProject();
+    writeFileSync(
+      join(cwd, 'package.json'),
+      JSON.stringify({ name: 'x', scripts: { lint: 'node -e "process.exit(1)"' } }),
+    );
+    const verdict = await verifyClaim(claim('lint-pass'), { cwd });
+    expect(verdict.status).toBe('failed');
+    expect(verdict.exitCode).toBe(1);
+  });
+
+  test('is unverifiable without a lint script', async () => {
+    const cwd = tmpProject();
+    writeFileSync(join(cwd, 'package.json'), JSON.stringify({ name: 'x' }));
+    const verdict = await verifyClaim(claim('lint-pass'), { cwd });
+    expect(verdict.status).toBe('unverifiable');
+  });
+});
+
 describe('endpoint-works verifier', () => {
   const servers: Server[] = [];
   afterAll(() => {

@@ -2,6 +2,7 @@ export type ClaimType =
   | 'tests-pass'
   | 'file-created'
   | 'build-pass'
+  | 'lint-pass'
   | 'endpoint-works'
   | 'env-set'
   | 'negative-existence';

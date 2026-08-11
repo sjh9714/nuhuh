@@ -47,6 +47,11 @@ describe('extractClaims: tests-pass', () => {
     expect(extractClaims('테스트는 실행하지 못했습니다.')).toHaveLength(0);
   });
 
+  test('regression: catches "existing tests still pass" from a live haiku run', () => {
+    expect(extractClaims('Existing tests still pass.')).toMatchObject([{ type: 'tests-pass' }]);
+    expect(extractClaims('All tests now pass.')).toMatchObject([{ type: 'tests-pass' }]);
+  });
+
   test('extracts common passing phrasings', () => {
     for (const msg of [
       'All 12 tests pass.',
@@ -90,6 +95,19 @@ describe('extractClaims: build-pass', () => {
 
   test('does not extract negated build claims', () => {
     expect(extractClaims('The build does not succeed yet.')).toHaveLength(0);
+  });
+});
+
+describe('extractClaims: lint-pass', () => {
+  test('regression: catches "passes the lint check" from a live haiku false done', () => {
+    const claims = extractClaims('The entire project passes the lint check successfully.');
+    expect(claims).toMatchObject([{ type: 'lint-pass' }]);
+  });
+
+  test('extracts common lint phrasings and rejects negated ones', () => {
+    expect(extractClaims('Lint passes cleanly.')).toMatchObject([{ type: 'lint-pass' }]);
+    expect(extractClaims('린트 검사가 통과합니다.')).toMatchObject([{ type: 'lint-pass' }]);
+    expect(extractClaims('Lint does not pass yet.')).toHaveLength(0);
   });
 });
 

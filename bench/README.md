@@ -45,11 +45,24 @@ A warning. Live-harness runs consume real tokens and take minutes per task.
 
 ## Measured so far
 
-One run per task, claude harness, 2026-08-11. All 18 tasks were genuinely
-completed, so FDR was 0.0% for that model at this task scale. The honest
-reading is that the current frontier model does not false-complete on tasks
-this small, and the interesting numbers will come from cheaper models, local
-models, and longer-horizon tasks.
+One run per task per model, claude harness, 2026-08-11.
+
+| model | tasks | declared done | false dones | FDR |
+| --- | --- | --- | --- | --- |
+| frontier default | 18 | 18 | 0 | 0.0% |
+| claude-haiku-4-5 | 18 | 16 | 2 | 12.5% |
+
+The honest reading. The frontier model did not false-complete at this task
+scale. The small model did, twice, and both misses teach something.
+
+One false done had no checkable claim at all ("Done! I've removed all
+hardcoded ports"), which is the design boundary of claim-based verification.
+The other is subtler. The small model wrote a lint script whose failures are
+silently swallowed by BSD find on macOS, then truthfully reported that its
+broken check passes. nuhuh verifies claims, not specs, so a true claim about
+a defective check gets past it. Ground truth is the only thing that catches
+that class, which is why this benchmark exists and why its checks know
+nothing about nuhuh.
 
 ## Honest limitations
 

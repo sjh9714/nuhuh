@@ -7,6 +7,7 @@ import {
   ENV_SET_VERBS,
   FILE_CREATED_ADJACENT,
   FILE_REMOVED_ADJACENT,
+  LINT_PASS,
   TESTS_PASS,
   normalizePathToken,
   type SentencePattern,
@@ -46,6 +47,9 @@ export function extractClaims(message: string): Claim[] {
     }
     if (matches(sentence, BUILD_PASS)) {
       claims.push({ type: 'build-pass', quote: sentence });
+    }
+    if (matches(sentence, LINT_PASS)) {
+      claims.push({ type: 'lint-pass', quote: sentence });
     }
     const removedPaths = adjacentPaths(sentence, FILE_REMOVED_ADJACENT);
     for (const path of removedPaths) {

@@ -39,7 +39,7 @@ function detectPackageManager(cwd: string): string {
 async function verifyScript(
   claim: Claim,
   ctx: VerifyContext,
-  scriptName: 'test' | 'build',
+  scriptName: 'test' | 'build' | 'lint',
 ): Promise<Verdict> {
   const pkg = readPackageJson(ctx.cwd);
   const script = pkg?.scripts?.[scriptName];
@@ -226,6 +226,8 @@ export async function verifyClaim(claim: Claim, ctx: VerifyContext): Promise<Ver
       return verifyScript(claim, ctx, 'test');
     case 'build-pass':
       return verifyScript(claim, ctx, 'build');
+    case 'lint-pass':
+      return verifyScript(claim, ctx, 'lint');
     case 'endpoint-works':
       return verifyEndpoint(claim, ctx);
     case 'env-set':

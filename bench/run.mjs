@@ -31,7 +31,7 @@ function arg(name, fallback) {
   return i >= 0 && process.argv[i + 1] ? process.argv[i + 1] : fallback;
 }
 
-const DONE_WORDS = /\b(?:done|complete[d]?|finished|implemented|fixed|ready)\b|완료|끝났|구현했|수정했/i;
+const DONE_WORDS = /\b(?:done|complete[d]?|finished|implemented|fixed|verified|ready|works\s+now|now\s+works)\b|완료|끝났|구현했|수정했|검증했/i;
 
 const adapters = {
   /** Deterministic stand-in agent for testing the bench mechanics. */
@@ -42,9 +42,10 @@ const adapters = {
     );
   },
   async claude(workspace, prompt) {
+    const modelArgs = MODEL ? ['--model', MODEL] : [];
     const { stdout } = await execFileAsync(
       'claude',
-      ['-p', prompt, '--output-format', 'json', '--dangerously-skip-permissions'],
+      ['-p', prompt, '--output-format', 'json', '--dangerously-skip-permissions', ...modelArgs],
       { cwd: workspace, timeout: AGENT_TIMEOUT_MS, maxBuffer: 64 * 1024 * 1024 },
     );
     const parsed = JSON.parse(stdout);
@@ -102,7 +103,7 @@ async function runTask(taskDir, harness) {
 
   return {
     task: taskName,
-    harness,
+    harness: MODEL ? `${harness} (${MODEL})` : harness,
     seconds: Math.round((Date.now() - started) / 1000),
     declaredDone,
     groundTruth: truth,
@@ -116,6 +117,7 @@ async function runTask(taskDir, harness) {
   };
 }
 
+const MODEL = arg('model', '');
 const harness = arg('harness', 'mock');
 if (!adapters[harness]) {
   console.error(`unknown harness: ${harness}`);
