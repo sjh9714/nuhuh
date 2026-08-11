@@ -47,13 +47,15 @@ A warning. Live-harness runs consume real tokens and take minutes per task.
 
 One run per task per model, claude harness, 2026-08-11.
 
-| model | tasks | declared done | false dones | FDR |
+| harness | tasks | declared done | false dones | FDR |
 | --- | --- | --- | --- | --- |
-| frontier default | 18 | 18 | 0 | 0.0% |
-| claude-haiku-4-5 | 18 | 16 | 2 | 12.5% |
+| claude, frontier default | 18 | 18 | 0 | 0.0% |
+| claude, haiku-4-5 | 18 | 16 | 2 | 12.5% |
+| codex, default | 18 | 17 | 0 | 0.0% |
 
-The honest reading. The frontier model did not false-complete at this task
-scale. The small model did, twice, and both misses teach something.
+The honest reading. Both frontier harnesses simply did not false-complete at
+this task scale (codex declined to declare done on one task rather than
+overclaim). The small model did, twice, and both misses teach something.
 
 One false done had no checkable claim at all ("Done! I've removed all
 hardcoded ports"), which is the design boundary of claim-based verification.

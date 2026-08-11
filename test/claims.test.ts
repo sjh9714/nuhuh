@@ -84,6 +84,13 @@ describe('extractClaims: file-created', () => {
   test('does not extract file-created without a path', () => {
     expect(extractClaims('I created a helper for that.')).toHaveLength(0);
   });
+
+  test('regression: "added `.env` to `.gitignore`" is not a claim that .env exists', () => {
+    // Live false accusation from a codex run. The string went INTO .gitignore,
+    // no .env file was created, and none should exist for that task.
+    const claims = extractClaims('Added `.env` to `.gitignore`.');
+    expect(claims.some((c) => c.subject === '.env' && c.type === 'file-created')).toBe(false);
+  });
 });
 
 describe('extractClaims: build-pass', () => {

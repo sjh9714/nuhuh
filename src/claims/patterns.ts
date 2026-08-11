@@ -64,7 +64,9 @@ export const LINT_PASS: SentencePattern = {
  * away is context. Each regex captures the path in group 1.
  */
 export const FILE_CREATED_ADJACENT: RegExp[] = [
-  /\b(?:created?|creating|adds?|added|adding|wrote|writing)\b[^`.!?]{0,40}`([^`]+)`/gi,
+  // "added `.env` to `.gitignore`" puts a STRING into a file, it does not
+  // create the path, so a path followed by to/into/in is not a creation claim.
+  /\b(?:created?|creating|adds?|added|adding|wrote|writing)\b[^`.!?]{0,40}`([^`]+)`(?!\s+(?:to|into|in)\b)/gi,
   // ko: `path` (파일)을 만들었/생성/추가
   /`([^`]+)`[^`]{0,20}?(?:만들었|생성(?:했|합)|추가(?:했|합))/g,
 ];
