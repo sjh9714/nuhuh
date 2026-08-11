@@ -3,55 +3,22 @@ import { join, resolve, sep } from 'node:path';
 import type { Claim, Verdict, VerifyContext } from '../types.js';
 import { censusFindings } from './census.js';
 import { runCommand } from './run.js';
-
-const NPM_PLACEHOLDER_TEST = /echo\s+["']?Error: no test specified/i;
-
-interface PackageJson {
-  scripts?: Record<string, string>;
-}
-
-function readPackageJson(cwd: string): PackageJson | null {
-  try {
-    return JSON.parse(readFileSync(join(cwd, 'package.json'), 'utf8')) as PackageJson;
-  } catch {
-    return null;
-  }
-}
-
-function detectPackageManager(cwd: string): string {
-  const lockfiles: Array<[string, string]> = [
-    ['pnpm-lock.yaml', 'pnpm'],
-    ['yarn.lock', 'yarn'],
-    ['bun.lockb', 'bun'],
-    ['bun.lock', 'bun'],
-  ];
-  for (const [file, pm] of lockfiles) {
-    try {
-      statSync(join(cwd, file));
-      return pm;
-    } catch {
-      // not this one
-    }
-  }
-  return 'npm';
-}
+import { detectCommand, type ScriptKind } from './runners.js';
 
 async function verifyScript(
   claim: Claim,
   ctx: VerifyContext,
-  scriptName: 'test' | 'build' | 'lint',
+  scriptName: ScriptKind,
 ): Promise<Verdict> {
-  const pkg = readPackageJson(ctx.cwd);
-  const script = pkg?.scripts?.[scriptName];
-  if (!script || (scriptName === 'test' && NPM_PLACEHOLDER_TEST.test(script))) {
+  const detected = detectCommand(ctx.cwd, scriptName);
+  if (!detected) {
     return {
       claim,
       status: 'unverifiable',
-      evidence: `no runnable ${scriptName} script found in package.json`,
+      evidence: `no runnable ${scriptName} command found in this project's manifests`,
     };
   }
-  const pm = detectPackageManager(ctx.cwd);
-  const command = scriptName === 'test' && pm === 'npm' ? 'npm test' : `${pm} run ${scriptName}`;
+  const { command } = detected;
   const result = await runCommand(command, ctx.cwd, ctx.timeoutMs);
   if (result.timedOut) {
     // A timeout proves nothing either way. Accusing here is how tools lose trust.

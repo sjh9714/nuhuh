@@ -145,8 +145,11 @@ npx nuhuh init
 Node 20 或更高，macOS、Linux 和 Windows 都可以（三个平台都在 CI 里跑）。
 Claude Code 会话从 `~/.claude/projects` 读取，Codex rollout
 从 `~/.codex` 读取。新鲜的测试和构建运行使用项目自己的 `package.json` 脚本，
-pnpm、yarn 和 bun 通过锁文件识别。pytest、go test、cargo test 和 gradle
-的识别在 [issue 4](https://github.com/sjh9714/nuhuh/issues/4) 里跟踪。
+pnpm、yarn 和 bun 通过锁文件识别。除了 npm 项目，nuhuh 还能识别
+Go 模块（`go test ./...`、`go build ./...`、`go vet ./...`）、
+Cargo crate（`cargo test`、`cargo build`）、pytest 配置（`pytest`）
+以及项目自带的 gradle wrapper。显式的 `package.json` 脚本始终优先，
+并且只会运行标准工具链命令，绝不会用全局安装的替代品。
 
 ## License
 

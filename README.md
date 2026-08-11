@@ -165,9 +165,12 @@ the complete list.
 Node 20 or newer, on macOS, Linux or Windows (all three run in CI). Claude
 Code sessions are read from `~/.claude/projects` and Codex rollouts from
 `~/.codex`. Fresh test and build runs use your project's own `package.json`
-scripts, with pnpm, yarn and bun detected by lockfile. Runner detection for
-pytest, go test, cargo test and gradle is tracked in
-[issue 4](https://github.com/sjh9714/nuhuh/issues/4).
+scripts, with pnpm, yarn and bun detected by lockfile. Beyond npm projects,
+nuhuh detects Go modules (`go test ./...`, `go build ./...`, `go vet ./...`),
+Cargo crates (`cargo test`, `cargo build`), pytest configuration (`pytest`)
+and the project's own gradle wrapper. An explicit `package.json` script always
+wins, and only standard toolchain commands ever run, never a globally
+installed substitute.
 
 ## License
 

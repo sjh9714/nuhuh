@@ -154,7 +154,10 @@ Node 20 以上、macOS と Linux と Windows で動きます（三つとも CI �
 Claude Code のセッションは `~/.claude/projects` から、Codex の
 ロールアウトは `~/.codex` から読みます。テストとビルドの新規実行はプロジェクト
 自身の `package.json` スクリプトを使い、pnpm、yarn、bun はロックファイルで検出します。
-pytest、go test、cargo test、gradle の検出は [issue 4](https://github.com/sjh9714/nuhuh/issues/4) で追跡しています。
+npm プロジェクト以外でも、Go モジュール（`go test ./...`、`go build ./...`、`go vet ./...`）、
+Cargo クレート（`cargo test`、`cargo build`）、pytest 設定（`pytest`）、
+プロジェクト自身の gradle ラッパーを検出します。明示的な `package.json`
+スクリプトが常に優先され、実行されるのは標準ツールチェーンのコマンドだけです。
 
 ## License
 

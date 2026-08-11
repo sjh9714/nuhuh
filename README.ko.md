@@ -154,7 +154,10 @@ Node 20 이상, macOS와 Linux와 Windows에서 동작합니다 (셋 다 CI에�
 Claude Code 세션은 `~/.claude/projects`에서, Codex 롤아웃은
 `~/.codex`에서 읽습니다. 테스트와 빌드 신선 실행은 프로젝트 자신의
 `package.json` 스크립트를 사용하고 pnpm, yarn, bun은 락파일로 감지합니다.
-pytest, go test, cargo test, gradle 감지는 [이슈 4](https://github.com/sjh9714/nuhuh/issues/4)에서 추적합니다.
+npm 프로젝트가 아니어도 Go 모듈(`go test ./...`, `go build ./...`, `go vet ./...`),
+Cargo 크레이트(`cargo test`, `cargo build`), pytest 설정(`pytest`),
+프로젝트 자체의 gradle 래퍼를 감지합니다. 명시적인 `package.json` 스크립트가
+항상 우선하고, 전역 설치된 대체물이 아니라 표준 툴체인 명령만 실행합니다.
 
 ## License
 
