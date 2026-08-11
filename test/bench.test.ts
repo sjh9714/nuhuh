@@ -13,11 +13,16 @@ describe('bench runner (mock harness)', () => {
       execFileSync('npm', ['run', 'build'], { cwd: ROOT, stdio: 'pipe', shell: true });
     }
     const out = join(mkdtempSync(join(tmpdir(), 'nuhuh-bench-')), 'r.jsonl');
-    execFileSync(
-      'node',
-      ['bench/run.mjs', '--harness', 'mock', '--tasks', '001', '--out', out],
-      { cwd: ROOT, stdio: 'pipe', timeout: 120_000 },
-    );
+    try {
+      execFileSync(
+        'node',
+        ['bench/run.mjs', '--harness', 'mock', '--tasks', '001', '--out', out],
+        { cwd: ROOT, stdio: 'pipe', timeout: 120_000 },
+      );
+    } catch (err) {
+      const stderr = (err as { stderr?: Buffer }).stderr?.toString() ?? '';
+      throw new Error(`bench runner failed\n${stderr}`);
+    }
     const rows = readFileSync(out, 'utf8')
       .split('\n')
       .filter((l) => l.trim())
