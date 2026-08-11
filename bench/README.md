@@ -26,10 +26,12 @@ Each task under `tasks/` is a small, dependency-free Node project with a planted
 problem, a natural-language `PROMPT.md`, and a `check.sh` ground truth. The
 `001` series is single-file work. The `101` series is multi-requirement work
 designed to invite misses outside the diff, like env plus docs, uncovered
-requirements, and second binaries. Seeds are committed to git in the workspace
-before the agent starts, so test-census (newly skipped tests) is measurable.
-Every task is verified red on its unmodified seed, so a do-nothing run cannot
-score as done.
+requirements, second binaries, exit-code contracts, stdout purity, idempotence
+and graceful shutdown. Seeds are committed to git in the workspace before the
+agent starts, so test-census (newly skipped tests) is measurable. Every check
+is verified in both directions before it counts, red on the unmodified seed so
+a do-nothing run cannot score as done, and green on a reference fix so an
+impossible check cannot inflate the numbers.
 
 ## Running
 
@@ -45,36 +47,37 @@ A warning. Live-harness runs consume real tokens and take minutes per task.
 
 ## Measured so far
 
-Three rounds of all 18 tasks per harness, 54 runs each, 2026-08-11.
+Three rounds of all 30 tasks per harness, 90 runs each, 2026-08-11 and 08-12.
 
 | harness | runs | declared done | false dones | FDR |
 | --- | --- | --- | --- | --- |
-| claude, frontier default | 54 | 54 | 0 | 0.0% |
-| claude, haiku-4-5 | 54 | 49 | 3 | 6.1% |
-| codex, default | 54 | 49 | 2 | 4.1% |
+| claude, frontier default | 90 | 89 | 0 | 0.0% |
+| codex, default | 90 | 85 | 2 | 2.4% |
+| claude, haiku-4-5 | 90 | 73 | 5 | 6.8% |
 
-Single runs lie, and our own data proved it. Codex measured 0% on round one
-and 4.1% over three rounds. Haiku measured 12.5% on round one and 6.1% over
-three. Trust the three-round numbers, and treat anything below that as noise.
+Single runs lie, and our own data keeps proving it. Codex measured 0% on its
+first round and 4.1% over the first three. Haiku measured 12.5% on its first
+round and 6.8% over ninety runs. Trust the multi-round numbers, and treat
+anything below that as noise.
 
-The recurring false-done generator is task 104, a config-consistency chore
-where every non-frontier model occasionally declares victory with a hardcoded
-port still in place, and the declaration carries no checkable claim at all.
-That is the design boundary of claim-based verification, ground truth is the
-only thing that catches it, which is why this benchmark exists.
-
-One false done had no checkable claim at all ("Done! I've removed all
-hardcoded ports"), which is the design boundary of claim-based verification.
-The other is subtler. The small model wrote a lint script whose failures are
-silently swallowed by BSD find on macOS, then truthfully reported that its
-broken check passes. nuhuh verifies claims, not specs, so a true claim about
-a defective check gets past it. Ground truth is the only thing that catches
-that class, which is why this benchmark exists and why its checks know
-nothing about nuhuh.
+The false-done generators are tasks 104 and 112, both consistency chores
+where the fix has to land in several places at once. The models declare
+victory with a hardcoded port still in place, or with the old config key
+still alive in one of the three files, and in every single false done the
+declaration carried no claim nuhuh can check. One haiku run even printed its
+own green checkmark per file, all three wrong. A second class came from task
+107, where the small model wrote a lint script whose failures BSD find
+silently swallows on macOS, then truthfully reported that its broken check
+passes. nuhuh verifies claims, not specs, so a true claim about a defective
+check gets past it, and a victory lap with no checkable claim gives it
+nothing to grab. Ground truth is the only thing that catches those classes,
+which is why this benchmark exists and why its checks know nothing about
+nuhuh.
 
 ## Honest limitations
 
-- 18 tasks so far. Enough for mechanics, not for headline numbers. The target
-  is 30 to 50 tasks before publishing any FDR figure as a claim about a model.
-- One run per task is noise. Published numbers should use 3 or more runs per task.
+- 30 tasks, 3 rounds each. Enough to publish, still small. More tasks and
+  more rounds keep being the cheapest way to make the numbers harder.
+- The tasks are small Node projects. FDR on large real-world repos is an open
+  question this benchmark does not answer yet.
 - Ground-truth checks probe observable behavior, not code quality.
