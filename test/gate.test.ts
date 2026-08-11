@@ -61,12 +61,57 @@ describe('decideGate', () => {
     expect(decision.action).toBe('allow');
   });
 
-  test('gives up and allows after maxBounces blocks for the same session', async () => {
+  test('bails early when the same claim fails the same way twice in a row', async () => {
+    // Suggested by a launch-thread commenter. Two identical failures mean the
+    // diagnosis is wrong, so the third bounce would only make a bigger mess.
     const { cwd, transcriptPath, stateDir } = setup('Done. I created `src/ghost.ts`.');
+    const input = { ...base, cwd, transcriptPath, stateDir };
+    expect((await decideGate(input)).action).toBe('block');
+    const second = await decideGate(input);
+    expect(second.action).toBe('allow');
+    expect(second.warning).toContain('same');
+  });
+
+  test('keeps blocking while the failures differ', async () => {
+    const { cwd, transcriptPath, stateDir } = setup('Done. I created `src/ghost.ts`.');
+    const input = { ...base, cwd, transcriptPath, stateDir };
+    expect((await decideGate(input)).action).toBe('block');
+    // the agent "progressed": now a different claim fails
+    writeFileSync(
+      transcriptPath,
+      JSON.stringify({
+        type: 'assistant',
+        sessionId: 's1',
+        message: {
+          role: 'assistant',
+          content: [{ type: 'text', text: 'Done. I created `src/other-ghost.ts`.' }],
+        },
+      }) + '\n',
+    );
+    expect((await decideGate(input)).action).toBe('block');
+  });
+
+  test('gives up after maxBounces even when every failure is different', async () => {
+    const { cwd, transcriptPath, stateDir } = setup('Done. I created `src/ghost1.ts`.');
     const input = { ...base, cwd, transcriptPath, stateDir, stopHookActive: true };
+    const rewrite = (path: string) =>
+      writeFileSync(
+        transcriptPath,
+        JSON.stringify({
+          type: 'assistant',
+          sessionId: 's1',
+          message: {
+            role: 'assistant',
+            content: [{ type: 'text', text: `Done. I created \`${path}\`.` }],
+          },
+        }) + '\n',
+      );
     expect((await decideGate(input)).action).toBe('block');
+    rewrite('src/ghost2.ts');
     expect((await decideGate(input)).action).toBe('block');
+    rewrite('src/ghost3.ts');
     expect((await decideGate(input)).action).toBe('block');
+    rewrite('src/ghost4.ts');
     const fourth = await decideGate(input);
     expect(fourth.action).toBe('allow');
     expect(fourth.warning).toContain('3');

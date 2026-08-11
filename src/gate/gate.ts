@@ -32,20 +32,26 @@ export function defaultStateDir(): string {
   return join(homedir(), '.nuhuh', 'state');
 }
 
-function readBounces(stateDir: string, sessionId: string): number {
+interface GateState {
+  bounces: number;
+  /** What failed last time, so a repeat can be recognized. */
+  lastFailure?: string;
+}
+
+function readState(stateDir: string, sessionId: string): GateState {
   try {
     const parsed = JSON.parse(
       readFileSync(join(stateDir, `${sessionId}.json`), 'utf8'),
-    ) as { bounces?: number };
-    return typeof parsed.bounces === 'number' ? parsed.bounces : 0;
+    ) as GateState;
+    return { bounces: typeof parsed.bounces === 'number' ? parsed.bounces : 0, lastFailure: parsed.lastFailure };
   } catch {
-    return 0;
+    return { bounces: 0 };
   }
 }
 
-function writeBounces(stateDir: string, sessionId: string, bounces: number): void {
+function writeState(stateDir: string, sessionId: string, state: GateState): void {
   mkdirSync(stateDir, { recursive: true });
-  writeFileSync(join(stateDir, `${sessionId}.json`), JSON.stringify({ bounces }));
+  writeFileSync(join(stateDir, `${sessionId}.json`), JSON.stringify(state));
 }
 
 export async function decideGate(input: GateInput): Promise<GateDecision> {
@@ -79,22 +85,40 @@ export async function decideGate(input: GateInput): Promise<GateDecision> {
   };
   const failed = verdicts.filter((v) => v.status === 'failed');
   if (failed.length === 0) {
-    writeBounces(stateDir, input.sessionId, 0);
+    writeState(stateDir, input.sessionId, { bounces: 0 });
     logDecision('allow', 0);
     return { action: 'allow', receipt };
   }
 
-  const bounces = readBounces(stateDir, input.sessionId);
-  if (bounces >= input.maxBounces) {
-    logDecision('allow', bounces);
+  const state = readState(stateDir, input.sessionId);
+  const failureSignature = failed
+    .map((v) => `${v.claim.type}|${v.claim.subject ?? ''}|${v.evidence}`)
+    .join('\n');
+
+  // Two identical failures in a row mean the diagnosis is wrong, and another
+  // bounce would only make a bigger mess. Hand back to the human early.
+  if (state.bounces >= 1 && state.lastFailure === failureSignature) {
+    logDecision('allow', state.bounces);
+    return {
+      action: 'allow',
+      warning: `nuhuh stopped bouncing: the same claim failed the same way twice in a row, so the fix is going in the wrong direction. Run \`npx nuhuh\` to see the receipt.`,
+      receipt,
+    };
+  }
+
+  if (state.bounces >= input.maxBounces) {
+    logDecision('allow', state.bounces);
     return {
       action: 'allow',
       warning: `nuhuh gave up after ${input.maxBounces} bounces with ${failed.length} claim(s) still failing. Run \`npx nuhuh\` to see the receipt.`,
       receipt,
     };
   }
-  writeBounces(stateDir, input.sessionId, bounces + 1);
-  logDecision('block', bounces + 1);
+  writeState(stateDir, input.sessionId, {
+    bounces: state.bounces + 1,
+    lastFailure: failureSignature,
+  });
+  logDecision('block', state.bounces + 1);
 
   const evidence = failed
     .map((v) => `- you said "${v.claim.quote}" and reality says ${v.evidence}`)
