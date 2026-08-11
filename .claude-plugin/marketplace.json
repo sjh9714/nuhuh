@@ -1,0 +1,13 @@
+{
+  "name": "nuhuh",
+  "owner": {
+    "name": "sjh9714"
+  },
+  "plugins": [
+    {
+      "name": "nuhuh",
+      "source": "./",
+      "description": "Your agent said Done. nuhuh runs the experiment — and bounces the agent until the receipt is green."
+    }
+  ]
+}

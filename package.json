@@ -1,0 +1,44 @@
+{
+  "name": "nuhuh",
+  "version": "0.1.0",
+  "description": "Your agent said Done. nuhuh runs the experiment — fresh tests, real exit codes, actual files — and hands back a receipt it wrote, not one your agent dictated.",
+  "keywords": [
+    "claude-code",
+    "codex",
+    "verification",
+    "false-completion",
+    "stop-hook",
+    "testing"
+  ],
+  "license": "MIT",
+  "author": "sjh9714",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sjh9714/nuhuh.git"
+  },
+  "type": "module",
+  "bin": {
+    "nuhuh": "dist/cli.js"
+  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run typecheck && npm run test && npm run build"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "tsup": "^8.3.5",
+    "typescript": "^5.7.0",
+    "vitest": "^3.0.0"
+  }
+}
