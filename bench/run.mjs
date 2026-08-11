@@ -16,7 +16,7 @@
 import { execFile, execFileSync, spawn } from 'node:child_process';
 import { appendFileSync, cpSync, mkdtempSync, mkdirSync, readFileSync, readdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { dirname, join } from 'node:path';
+import { basename, dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
 
@@ -96,7 +96,7 @@ function groundTruth(workspace) {
 }
 
 async function runTask(taskDir, harness) {
-  const taskName = taskDir.split('/').pop();
+  const taskName = basename(taskDir);
   const workspace = mkdtempSync(join(tmpdir(), `fdr-${taskName}-`));
   cpSync(join(taskDir, 'seed'), workspace, { recursive: true });
   execFileSync('git', ['init', '-q'], { cwd: workspace });
