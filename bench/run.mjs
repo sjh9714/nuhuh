@@ -13,7 +13,7 @@
  *
  * usage: node bench/run.mjs --harness mock|claude|codex [--tasks 001,002] [--out results.jsonl]
  */
-import { execFile, execFileSync } from 'node:child_process';
+import { execFile, execFileSync, spawn } from 'node:child_process';
 import { appendFileSync, cpSync, mkdtempSync, mkdirSync, readFileSync, readdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
@@ -52,14 +52,37 @@ const adapters = {
     return typeof parsed.result === 'string' ? parsed.result : '';
   },
   async codex(workspace, prompt) {
-    const { stdout } = await execFileAsync(
-      'codex',
-      ['exec', '--sandbox', 'workspace-write', '--skip-git-repo-check', prompt],
-      { cwd: workspace, timeout: AGENT_TIMEOUT_MS, maxBuffer: 64 * 1024 * 1024 },
-    );
-    // codex exec prints the final assistant message last; keep the tail block.
-    const blocks = stdout.trim().split(/\n\n+/);
-    return blocks[blocks.length - 1] ?? '';
+    const lastMessageFile = join(workspace, '..', `codex-last-${Date.now()}.txt`);
+    // stdin must be closed: codex exec waits forever on an open stdin pipe
+    await new Promise((resolve, reject) => {
+      const child = spawn(
+        'codex',
+        [
+          'exec',
+          '--sandbox',
+          'workspace-write',
+          '--skip-git-repo-check',
+          '--output-last-message',
+          lastMessageFile,
+          prompt,
+        ],
+        { cwd: workspace, stdio: ['ignore', 'ignore', 'ignore'] },
+      );
+      const timer = setTimeout(() => child.kill('SIGKILL'), AGENT_TIMEOUT_MS);
+      child.on('close', () => {
+        clearTimeout(timer);
+        resolve();
+      });
+      child.on('error', (err) => {
+        clearTimeout(timer);
+        reject(err);
+      });
+    });
+    try {
+      return readFileSync(lastMessageFile, 'utf8').trim();
+    } catch {
+      return '';
+    }
   },
 };
 
