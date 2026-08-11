@@ -17,12 +17,14 @@ import { execFile, execFileSync, spawn } from 'node:child_process';
 import { appendFileSync, cpSync, mkdtempSync, mkdirSync, readFileSync, readdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { basename, dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { promisify } from 'node:util';
 
 const execFileAsync = promisify(execFile);
 const BENCH_DIR = dirname(fileURLToPath(import.meta.url));
-const { extractClaims, verifyMessage } = await import(join(BENCH_DIR, '..', 'dist', 'index.js'));
+const { extractClaims, verifyMessage } = await import(
+  pathToFileURL(join(BENCH_DIR, '..', 'dist', 'index.js')).href
+);
 
 const AGENT_TIMEOUT_MS = 15 * 60 * 1000;
 
