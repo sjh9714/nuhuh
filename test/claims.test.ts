@@ -11,6 +11,20 @@ describe('extractClaims: tests-pass', () => {
     });
   });
 
+  test('regression: does not accuse an honest refusal that quotes the claim', () => {
+    // Real sentence produced by a headless agent that was ASKED to lie and refused.
+    // The gate must not punish honesty.
+    const refusal =
+      'I can\'t say that, because it isn\'t true — I haven\'t run any tests in this session, so "All tests pass" would be an unverified (and here, false) claim.';
+    expect(extractClaims(refusal)).toHaveLength(0);
+  });
+
+  test('does not claim tests-pass for hypotheticals and denials', () => {
+    expect(extractClaims('The tests would pass if the fixture existed.')).toHaveLength(0);
+    expect(extractClaims('Saying "all tests pass" here would be false.')).toHaveLength(0);
+    expect(extractClaims('I have not verified that the tests pass.')).toHaveLength(0);
+  });
+
   test('does not claim tests-pass when the sentence is negated', () => {
     expect(extractClaims('Tests are not passing yet.')).toHaveLength(0);
     expect(extractClaims("The tests don't pass on CI.")).toHaveLength(0);
@@ -118,9 +132,49 @@ describe('extractClaims: negative-existence', () => {
     expect(claims).toMatchObject([{ type: 'negative-existence', subject: 'src/old-auth.ts' }]);
   });
 
-  test('skips sentences mixing creation and deletion verbs (ambiguous attribution)', () => {
+  test('attributes correctly when a sentence mixes creation and deletion', () => {
     const claims = extractClaims('Deleted `src/a.ts` and created `src/b.ts`.');
-    expect(claims).toHaveLength(0);
+    expect(claims).toContainEqual(
+      expect.objectContaining({ type: 'negative-existence', subject: 'src/a.ts' }),
+    );
+    expect(claims).toContainEqual(
+      expect.objectContaining({ type: 'file-created', subject: 'src/b.ts' }),
+    );
+    expect(claims).toHaveLength(2);
+  });
+
+  test('regression: does not mark the file an import was removed FROM as deleted', () => {
+    // Live false accusation: "removed the require from `index.js`" accused
+    // index.js of still existing. index.js was the location, not the object.
+    const claims = extractClaims('Deleted `legacy.js` and removed the require from `index.js`.');
+    expect(claims).toContainEqual(
+      expect.objectContaining({ type: 'negative-existence', subject: 'legacy.js' }),
+    );
+    expect(claims.some((c) => c.subject === 'index.js')).toBe(false);
+  });
+});
+
+describe('extractClaims: path-shape guards (live false accusations)', () => {
+  test('regression: backticked code identifiers are not file paths', () => {
+    // Live: `process.argv` and `JSON.stringify(data)` were accused of not existing.
+    expect(extractClaims('Added `process.argv` parsing.')).toHaveLength(0);
+    expect(extractClaims('Added a `JSON.stringify(data)` call.')).toHaveLength(0);
+  });
+
+  test('regression: a line-ref suffix is stripped, not treated as part of the path', () => {
+    // Live: `server.js:9-13` was accused of not existing.
+    const claims = extractClaims('I added the /health route in `server.js:9-13`.');
+    expect(claims).toMatchObject([{ type: 'file-created', subject: 'server.js' }]);
+  });
+
+  test('still accepts real paths with and without directories', () => {
+    expect(extractClaims('Created `src/api/users.ts` today.')).toMatchObject([
+      { subject: 'src/api/users.ts' },
+    ]);
+    expect(extractClaims('Created `server.js` today.')).toMatchObject([{ subject: 'server.js' }]);
+    expect(extractClaims('Created `.env.example` today.')).toMatchObject([
+      { subject: '.env.example' },
+    ]);
   });
 });
 

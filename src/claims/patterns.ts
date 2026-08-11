@@ -22,6 +22,10 @@ export const TESTS_PASS: SentencePattern = {
   ],
   negate: [
     /\b(?:not|never|should|won't|wont|don't|dont|doesn't|doesnt|didn't|didnt|can't|cant|couldn't|couldnt|unable\s+to)\s+(?:be\s+|all\s+)?pass/i,
+    // Hypotheticals, denials, and sentences that mention the claim rather than
+    // make it. Found live: an agent refusing to lie quoted "All tests pass"
+    // and an early nuhuh would have blocked the honest refusal. Miss, don't accuse.
+    /\bwould\b|\bfalse\b|\bisn'?t\s+true\b|\bnot\s+true\b|\bunverified\b|\bcan'?t\s+say\b|\bhaven'?t\s+(?:run|ran|verified)\b|\bnot\s+verified\b/i,
     // ko: any negation/failure marker in the sentence defeats the claim (miss, don't accuse)
     /않|못|실패|안\s*(?:됩|된|돼)/,
   ],
@@ -40,19 +44,42 @@ export const BUILD_PASS: SentencePattern = {
   ],
 };
 
-/** Verbs that turn a sentence naming a path into a file-created claim. */
-export const FILE_CREATED_VERBS: RegExp[] = [
-  /\b(?:created?|creating|added|adding|wrote|writing|new\s+file)\b/i,
-  // ko: 만들었/생성/추가
-  /만들었|생성(?:했|합)|추가(?:했|합)/,
+/**
+ * File claims use verb↔path ADJACENCY, not sentence-level attribution.
+ * "removed the require from `index.js`" must not accuse index.js of being
+ * deleted — the path right after the verb is the object; anything further
+ * away is context. Each regex captures the path in group 1.
+ */
+export const FILE_CREATED_ADJACENT: RegExp[] = [
+  /\b(?:created?|creating|adds?|added|adding|wrote|writing)\b[^`.!?]{0,40}`([^`]+)`/gi,
+  // ko: `path` (파일)을 만들었/생성/추가
+  /`([^`]+)`[^`]{0,20}?(?:만들었|생성(?:했|합)|추가(?:했|합))/g,
 ];
 
-/** Verbs that turn a sentence naming a path into a negative-existence claim. */
-export const FILE_REMOVED_VERBS: RegExp[] = [
-  /\b(?:there\s+is\s+no|no\s+longer\s+exists?|doesn'?t\s+exist|removed|deleted|deleting)\b/i,
-  // ko: 삭제/제거/없습니다/존재하지 않
-  /삭제(?:했|합)|제거(?:했|합)|없습니다|존재하지\s*않/,
+export const FILE_REMOVED_ADJACENT: RegExp[] = [
+  /\b(?:deleted?|deleting|removed?|removing)\b\s+(?:the\s+)?(?:file\s+)?`([^`]+)`/gi,
+  /\b(?:there\s+is\s+no|no\s+longer\s+exists?|doesn'?t\s+exist)\b[^`.!?]{0,20}`([^`]+)`/gi,
+  // ko: `path` 삭제/제거/없습니다/존재하지 않
+  /`([^`]+)`[^`]{0,20}?(?:삭제(?:했|합)|제거(?:했|합))/g,
+  /`([^`]+)`[^`]{0,20}?(?:없습니다|존재하지\s*않)/g,
 ];
+
+/**
+ * Backticked tokens that are plausibly file paths, not code identifiers.
+ * Live false accusations that shaped this: `process.argv`,
+ * `JSON.stringify(data)`, `server.js:9-13`.
+ */
+const FILE_EXTENSIONS =
+  /\.(?:m?[jt]sx?|c[jt]s|json|jsonc|md|mdx|py|rb|go|rs|java|kt|swift|c|h|cc|hh|cpp|hpp|cs|php|sh|bash|zsh|ya?ml|toml|ini|cfg|css|scss|less|html?|vue|svelte|sql|txt|xml|lock|gradle|properties|env|example|local|test|spec)$/i;
+
+export function normalizePathToken(token: string): string | null {
+  // strip a trailing line reference: server.js:9-13 → server.js
+  const stripped = token.trim().replace(/:\d+(?:-\d+)?$/, '');
+  if (stripped.length === 0 || /[\s()<>{}]/.test(stripped)) return null;
+  const looksLikePath =
+    stripped.includes('/') || FILE_EXTENSIONS.test(stripped) || stripped.startsWith('.env');
+  return looksLikePath ? stripped : null;
+}
 
 /** A URL plus one of these makes an endpoint-works claim. */
 export const ENDPOINT_WORKS_VERBS: RegExp[] = [

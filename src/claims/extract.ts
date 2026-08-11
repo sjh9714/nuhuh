@@ -5,9 +5,10 @@ import {
   ENV_CONTEXT,
   ENV_KEY,
   ENV_SET_VERBS,
-  FILE_CREATED_VERBS,
-  FILE_REMOVED_VERBS,
+  FILE_CREATED_ADJACENT,
+  FILE_REMOVED_ADJACENT,
   TESTS_PASS,
+  normalizePathToken,
   type SentencePattern,
 } from './patterns.js';
 
@@ -24,13 +25,14 @@ function matches(sentence: string, pattern: SentencePattern): boolean {
   return pattern.match.some((p) => p.test(sentence)) && !pattern.negate.some((p) => p.test(sentence));
 }
 
-/** Backtick-quoted tokens that look like file paths (have an extension or a slash). */
-function extractPaths(sentence: string): string[] {
+/** Paths captured by verb-adjacent patterns, filtered to path-shaped tokens. */
+function adjacentPaths(sentence: string, patterns: RegExp[]): string[] {
   const paths: string[] = [];
-  for (const m of sentence.matchAll(/`([^`\n]+)`/g)) {
-    const token = (m[1] ?? '').trim();
-    if (token.length > 0 && !token.includes(' ') && /[/.]/.test(token)) {
-      paths.push(token);
+  for (const pattern of patterns) {
+    pattern.lastIndex = 0;
+    for (const m of sentence.matchAll(pattern)) {
+      const path = normalizePathToken(m[1] ?? '');
+      if (path && !paths.includes(path)) paths.push(path);
     }
   }
   return paths;
@@ -45,14 +47,15 @@ export function extractClaims(message: string): Claim[] {
     if (matches(sentence, BUILD_PASS)) {
       claims.push({ type: 'build-pass', quote: sentence });
     }
-    const created = FILE_CREATED_VERBS.some((p) => p.test(sentence));
-    const removed = FILE_REMOVED_VERBS.some((p) => p.test(sentence));
-    // Both kinds of verb in one sentence: which path belongs to which verb is
-    // ambiguous, and a wrong guess is a false accusation. Skip the sentence.
-    if (created !== removed) {
-      const type = created ? 'file-created' : 'negative-existence';
-      for (const path of extractPaths(sentence)) {
-        claims.push({ type, quote: sentence, subject: path });
+    const removedPaths = adjacentPaths(sentence, FILE_REMOVED_ADJACENT);
+    for (const path of removedPaths) {
+      claims.push({ type: 'negative-existence', quote: sentence, subject: path });
+    }
+    for (const path of adjacentPaths(sentence, FILE_CREATED_ADJACENT)) {
+      // A path can't be both created and removed by one sentence; removal wins
+      // ("moved" phrasings) and file-created stays silent rather than accuse.
+      if (!removedPaths.includes(path)) {
+        claims.push({ type: 'file-created', quote: sentence, subject: path });
       }
     }
 
