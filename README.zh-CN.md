@@ -16,7 +16,7 @@
 </p>
 
 <p align="center">
-  <img src="docs/demo.gif" width="880" alt="nuhuh 演示。智能体声称完成了四件事，nuhuh 重新执行现实检查，抓到其中两条是假的">
+  <img src="docs/demo.gif" width="880" alt="nuhuh 演示。智能体宣布完成，nuhuh 重新执行每条声明，用红色回执拒绝虚假的完成，修复后回执变绿才放行">
 </p>
 
 编码智能体几乎每次都用同一句话收尾。**"完成了！所有测试都通过。"**

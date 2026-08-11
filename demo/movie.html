@@ -1,0 +1,207 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><style>
+  html,body{width:1920px;height:1080px;overflow:hidden;background:#101216;margin:0}
+  #scene{position:relative;width:1920px;height:1080px;overflow:hidden}
+  #world{position:absolute;left:0;top:0;width:1920px;height:1080px;transform-origin:0 0}
+
+  /* terminal window, colors mirror the real CLI (ANSI green/red/yellow + dim) */
+  #win{position:absolute;left:320px;top:90px;width:1280px;height:900px;
+       background:#16181d;border:1px solid #262a33;border-radius:14px;
+       box-shadow:0 30px 80px rgba(0,0,0,.55)}
+  #titlebar{height:44px;display:flex;align-items:center;padding:0 18px;
+       border-bottom:1px solid #23272f;color:#8b949e;
+       font:500 15px ui-sans-serif,-apple-system,sans-serif}
+  .dot{width:13px;height:13px;border-radius:50%;margin-right:8px}
+  #title{margin-left:12px;letter-spacing:.2px}
+  #term{position:relative;padding:26px 34px;height:806px;
+       font:23px/1.62 ui-monospace,Menlo,Monaco,Consolas,monospace;color:#d4d4d4}
+  .act{position:absolute;left:34px;top:26px;right:34px}
+
+  .row{white-space:pre-wrap}
+  .dim{color:#8b949e}
+  .ok{color:#3fb950}
+  .bad{color:#f85149}
+  .pair{margin-top:6px}
+  .ev{color:#8b949e;padding-left:42px;font-size:21px}
+  #rcpt1-head,#rcpt2-head{margin-top:18px}
+  .summary{margin-top:16px}
+
+  #rejectBox{margin-top:18px;border:1px solid #f8514966;background:#f851490f;
+       border-radius:10px;padding:14px 18px;font-size:21px}
+  #rejectBox .h{color:#f85149;font-weight:700;margin-bottom:6px;font-size:22px}
+  #acceptRow{margin-top:16px;color:#3fb950;font-weight:700}
+  #endRow{margin-top:26px}
+  .caret{display:inline-block;width:12px;background:#d4d4d4;height:26px;
+       vertical-align:-4px}
+</style></head>
+<body>
+<div id="scene"><div id="world">
+  <div id="win">
+    <div id="titlebar">
+      <span class="dot" style="background:#ff5f56"></span>
+      <span class="dot" style="background:#ffbd2e"></span>
+      <span class="dot" style="background:#27c93f"></span>
+      <span id="title">Claude Code — Stop hook · nuhuh gate</span>
+    </div>
+    <div id="term">
+      <div class="act" id="act1">
+        <div class="row"><span class="dim">⏺ agent</span></div>
+        <div class="row" id="agentRow"><span id="typed"></span><span class="caret" id="caret"></span></div>
+        <div class="row dim" id="hookRow">── Stop · nuhuh re-runs every claim, fresh <span id="spin"></span></div>
+
+        <div class="row" id="rcpt1-head">🧾 receipt</div>
+        <div class="pair" id="p1"><div class="ok">✅ src/login.ts</div><div class="ev">src/login.ts exists (33 bytes)</div></div>
+        <div class="pair" id="p2"><div class="bad">❌ src/login.test.ts</div><div class="ev">src/login.test.ts does not exist</div></div>
+        <div class="pair" id="p3"><div class="bad">❌ All tests pass.</div><div class="ev">ran `npm test` fresh, exit 1 ("Tests: 1 failed, 3 passed")</div></div>
+        <div class="pair" id="p4"><div class="ok">✅ The build succeeds.</div><div class="ev">ran `npm run build` fresh, exit 0</div></div>
+        <div class="row summary" id="sum1">2 of 4 claims verified, <span class="bad">2 failed</span>.</div>
+
+        <div id="rejectBox">
+          <div class="h">✋ Done rejected, evidence sent back to the agent</div>
+          <div class="dim">Fix the work until the claims are actually true, then finish. Do not weaken or delete checks to make them pass.</div>
+        </div>
+      </div>
+
+      <div class="act" id="act2">
+        <div class="row dim" id="fixRow">⏺ agent writes src/login.test.ts, fixes the failing expectation, tries to finish again <span id="spin2"></span></div>
+
+        <div class="row" id="rcpt2-head">🧾 receipt</div>
+        <div class="pair" id="g1"><div class="ok">✅ src/login.ts</div><div class="ev">src/login.ts exists (33 bytes)</div></div>
+        <div class="pair" id="g2"><div class="ok">✅ src/login.test.ts</div><div class="ev">src/login.test.ts exists (241 bytes)</div></div>
+        <div class="pair" id="g3"><div class="ok">✅ All tests pass.</div><div class="ev">ran `npm test` fresh, exit 0 ("Tests: 4 passed")</div></div>
+        <div class="pair" id="g4"><div class="ok">✅ The build succeeds.</div><div class="ev">ran `npm run build` fresh, exit 0</div></div>
+        <div class="row summary" id="sum2">4 of 4 claims verified.</div>
+        <div class="row" id="acceptRow">✔ Done accepted.</div>
+
+        <div class="row dim" id="endRow">$ npx nuhuh demo&nbsp;&nbsp;·&nbsp;&nbsp;github.com/sjh9714/nuhuh</div>
+      </div>
+    </div>
+  </div>
+</div></div>
+
+<script>
+const AGENT_MSG = 'Done! I created `src/login.ts` and added `src/login.test.ts` for coverage. All tests pass. The build succeeds.';
+const SPIN = ['⠋','⠙','⠹','⠸','⠼','⠴','⠦','⠧','⠇','⠏'];
+
+/* ── timing table, ms ─────────────────────────────────────────────── */
+const T={
+  type:[200,1500], hook:[1700,2200],
+  rh:[2400,2700],
+  r1:[2800,3150], r2:[3450,3850], r3:[4200,4650], r4:[4900,5250],
+  sum1:[5550,5900], reject:[6150,6700],
+  clear:[7300,7650],
+  fix:[7650,8350],
+  gh:[8450,8650],
+  g1:[8700,8900], g2:[8970,9170], g3:[9240,9440], g4:[9510,9710],
+  sum2:[9850,10150], accept:[10300,10650],
+  end:[10900,11300],
+};
+const DURATION=11700;
+
+/* ── five-line toolkit ────────────────────────────────────────────── */
+const clamp01=v=>v<0?0:v>1?1:v;
+const prog=(t,a,b)=>clamp01((t-a)/(b-a));
+const seg=(t,a,b)=>t>=a&&t<b;
+const ease=x=>x<0.5?2*x*x:1-Math.pow(-2*x+2,2)/2;
+const lerp=(a,b,x)=>a+(b-a)*x;
+const $=id=>document.getElementById(id);
+
+function pathAt(path,t,dims){
+  for(let i=0;i<path.length-1;i++){
+    const a=path[i],b=path[i+1];
+    if(t>=a[0]&&t<=b[0]){
+      const x=ease(prog(t,a[0],b[0]));
+      return dims.map((_,k)=>lerp(a[k+1],b[k+1],x));
+    }
+  }
+  const L=path[path.length-1];return dims.map((_,k)=>L[k+1]);
+}
+
+/* ── measured targets and camera ──────────────────────────────────── */
+let CAM=[[0,960,540,1],[DURATION,960,540,1]];
+function center(el){const r=el.getBoundingClientRect();return [r.left+r.width/2,r.top+r.height/2];}
+function measure(){
+  const red=center($('p3'));        // the red heart of receipt 1
+  const rej=center($('rejectBox'));
+  const acc=center($('sum2'));
+  CAM=[
+    [0,960,540,1],[T.rh[0],960,540,1],                    // wide through typing+hook
+    [T.r1[1], red[0], red[1]-90, 1.42],                    // zoom onto the receipt
+    [T.r4[1], red[0], red[1]-30, 1.42],                    // slow drift down the lines
+    [T.reject[0]+150, rej[0], rej[1]-120, 1.22],           // pull back for the verdict
+    [T.clear[1], rej[0], rej[1]-120, 1.22],                // hold through the clear
+    [T.g4[0], acc[0], acc[1]-130, 1.30],                   // settle on the green verdict
+    [T.accept[1], acc[0], acc[1]-130, 1.30],
+    // a gentle 1.12 at the end crops the empty bottom of the window
+    [T.end[1],960,505,1.12],[DURATION,960,505,1.12],
+  ];
+}
+
+/* helpers: an element appearing in [a,b] */
+function rowIn(el,[a,b],t){
+  const x=ease(prog(t,a,b));
+  el.style.opacity=x;
+  el.style.transform=`translateY(${8*(1-x)}px)`;
+}
+
+function seek(t){
+  t=Math.max(0,Math.min(DURATION,t));
+
+  /* camera */
+  const [cx,cy,s]=pathAt(CAM,t,[0,0,0]);
+  $('world').style.transform=`translate(${960-cx*s}px,${540-cy*s}px) scale(${s})`;
+
+  /* act visibility, act1 clears out and act2 takes the same space */
+  const clr=ease(prog(t,T.clear[0],T.clear[1]));
+  $('act1').style.opacity=1-clr;
+  $('act2').style.opacity=clr;
+
+  /* typing */
+  const n=Math.floor(prog(t,T.type[0],T.type[1])*AGENT_MSG.length);
+  $('typed').textContent=t<T.type[0]?'':AGENT_MSG.slice(0,n);
+  $('caret').style.opacity = t<T.hook[0] ? ((Math.floor(t/400)%2)?0.15:1) : 0;
+
+  /* hook line + spinner while checks still resolving */
+  rowIn($('hookRow'),T.hook,t);
+  const spinning = seg(t,T.hook[1],T.sum1[0]);
+  $('spin').textContent = spinning ? SPIN[Math.floor(t/80)%SPIN.length] : '';
+
+  /* receipt 1 */
+  rowIn($('rcpt1-head'),T.rh,t);
+  rowIn($('p1'),T.r1,t); rowIn($('p2'),T.r2,t);
+  rowIn($('p3'),T.r3,t); rowIn($('p4'),T.r4,t);
+  rowIn($('sum1'),T.sum1,t);
+  rowIn($('rejectBox'),T.reject,t);
+
+  /* act 2 */
+  rowIn($('fixRow'),T.fix,t);
+  $('spin2').textContent = seg(t,T.fix[1],T.gh[0]) ? SPIN[Math.floor(t/80)%SPIN.length] : '';
+  rowIn($('rcpt2-head'),T.gh,t);
+  rowIn($('g1'),T.g1,t); rowIn($('g2'),T.g2,t);
+  rowIn($('g3'),T.g3,t); rowIn($('g4'),T.g4,t);
+  rowIn($('sum2'),T.sum2,t);
+  rowIn($('acceptRow'),T.accept,t);
+  rowIn($('endRow'),T.end,t);
+}
+
+window.seek=seek;
+window.DURATION=DURATION;
+window.ready=(async()=>{ await document.fonts.ready; measure(); seek(0); })();
+
+/* ?play — live preview loop, ?debug — scene label */
+if(new URLSearchParams(location.search).has('play')){
+  window.ready.then(()=>{
+    const t0=performance.now();
+    (function loop(){ seek((performance.now()-t0)%(DURATION+800)); requestAnimationFrame(loop); })();
+  });
+}
+if(new URLSearchParams(location.search).has('debug')){
+  const box=document.createElement('div');
+  box.style.cssText='position:fixed;left:10px;top:10px;color:#0f0;font:16px monospace;z-index:9';
+  document.body.appendChild(box);
+  const SCENES=[[0,'C1 agent types Done'],[1900,'C2 stop hook'],[2600,'C3 receipt red'],
+    [5750,'C4 verdict + reject'],[7600,'C5 clear + fix'],[8900,'C6 receipt green'],[11350,'C7 end']];
+  const orig=window.seek;
+  window.seek=t=>{orig(t);const s=[...SCENES].reverse().find(s=>t>=s[0]);box.textContent=(t/1000).toFixed(2)+'s  '+s[1];};
+}
+</script></body></html>

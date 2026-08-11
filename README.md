@@ -16,7 +16,7 @@
 </p>
 
 <p align="center">
-  <img src="docs/demo.gif" width="880" alt="nuhuh demo. the agent claims four things are done, nuhuh re-runs reality and catches two of them being false">
+  <img src="docs/demo.gif" width="880" alt="nuhuh demo. the agent declares Done, nuhuh re-runs every claim fresh, rejects the false Done with a red receipt, and accepts once the fix turns the receipt green">
 </p>
 
 Coding agents end almost every task the same way. **"Done! All tests pass."**

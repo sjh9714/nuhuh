@@ -5,3 +5,4 @@ dist/
 coverage/
 bench/results/
 launch/
+demo/_frames/
