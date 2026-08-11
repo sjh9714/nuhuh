@@ -45,17 +45,23 @@ A warning. Live-harness runs consume real tokens and take minutes per task.
 
 ## Measured so far
 
-One run per task per model, claude harness, 2026-08-11.
+Three rounds of all 18 tasks per harness, 54 runs each, 2026-08-11.
 
-| harness | tasks | declared done | false dones | FDR |
+| harness | runs | declared done | false dones | FDR |
 | --- | --- | --- | --- | --- |
-| claude, frontier default | 18 | 18 | 0 | 0.0% |
-| claude, haiku-4-5 | 18 | 16 | 2 | 12.5% |
-| codex, default | 18 | 17 | 0 | 0.0% |
+| claude, frontier default | 54 | 54 | 0 | 0.0% |
+| claude, haiku-4-5 | 54 | 49 | 3 | 6.1% |
+| codex, default | 54 | 49 | 2 | 4.1% |
 
-The honest reading. Both frontier harnesses simply did not false-complete at
-this task scale (codex declined to declare done on one task rather than
-overclaim). The small model did, twice, and both misses teach something.
+Single runs lie, and our own data proved it. Codex measured 0% on round one
+and 4.1% over three rounds. Haiku measured 12.5% on round one and 6.1% over
+three. Trust the three-round numbers, and treat anything below that as noise.
+
+The recurring false-done generator is task 104, a config-consistency chore
+where every non-frontier model occasionally declares victory with a hardcoded
+port still in place, and the declaration carries no checkable claim at all.
+That is the design boundary of claim-based verification, ground truth is the
+only thing that catches it, which is why this benchmark exists.
 
 One false done had no checkable claim at all ("Done! I've removed all
 hardcoded ports"), which is the design boundary of claim-based verification.
