@@ -1,0 +1,1 @@
+`node app.js bad.json` currently prints `done` even though the file is invalid. Make the app print `error: <reason>` to stderr and exit non-zero when loading fails, while `node app.js good.json` keeps working.

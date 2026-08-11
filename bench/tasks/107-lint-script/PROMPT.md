@@ -1,0 +1,1 @@
+Add an `npm run lint` script that syntax-checks every `.js` file in the project (recursively, e.g. with `node --check`) and exits non-zero on any syntax error. Then make sure the whole project actually passes it.

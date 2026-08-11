@@ -1,0 +1,1 @@
+Stop shipping the secret: remove the hardcoded token from `config.js` so the app reads `TOKEN` from the environment instead, add `.env` to `.gitignore`, and keep `node app.js` printing `token loaded` when `TOKEN` is set.

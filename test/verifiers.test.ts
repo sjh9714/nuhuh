@@ -166,6 +166,16 @@ describe('env-set verifier', () => {
     expect(verdict.evidence).not.toContain('secret-hostname');
   });
 
+  test('regression: a key documented only in .env.example is verified, not accused', async () => {
+    // Live false accusation: agent documented API_KEY in .env.example (as asked)
+    // and nuhuh said "no .env file exists, so API_KEY is not set anywhere".
+    const cwd = tmpProject();
+    writeFileSync(join(cwd, '.env.example'), 'API_KEY=\n');
+    const verdict = await verifyClaim(claim('env-set', 'API_KEY'), { cwd });
+    expect(verdict.status).toBe('verified');
+    expect(verdict.evidence).toContain('.env.example');
+  });
+
   test('checks .env.local too', async () => {
     const cwd = tmpProject();
     writeFileSync(join(cwd, '.env.local'), 'STRIPE_KEY=sk_123\n');

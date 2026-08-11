@@ -115,7 +115,18 @@ function verifyFileCreated(claim: Claim, ctx: VerifyContext): Verdict {
   }
 }
 
-const ENV_FILES = ['.env', '.env.local', '.env.development', '.env.production', '.env.test'];
+const ENV_FILES = [
+  '.env',
+  '.env.local',
+  '.env.development',
+  '.env.production',
+  '.env.test',
+  // Documentation files count: "documented API_KEY in .env.example" is a real
+  // claim agents make, and accusing it was a live false accusation.
+  '.env.example',
+  '.env.sample',
+  '.env.template',
+];
 
 function verifyEnvSet(claim: Claim, ctx: VerifyContext): Verdict {
   if (!claim.subject) {

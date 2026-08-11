@@ -1,0 +1,1 @@
+`MAX_ITEMS` is duplicated in `list.js` and `report.js`. Create `constants.js` as the single source of truth and import it in both, so changing it in one place changes both outputs. `npm test` must pass.
