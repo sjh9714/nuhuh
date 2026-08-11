@@ -56,7 +56,7 @@ export async function postHoc(opts: PostHocOptions): Promise<PostHocResult> {
     return {
       exitCode: 0,
       verdicts: [],
-      receipt: `no Claude Code or Codex session found for ${opts.cwd} — nothing to check.`,
+      receipt: `no Claude Code or Codex session found for ${opts.cwd}, nothing to check.`,
     };
   }
   const { verdicts, receipt, exitCode } = await verifyMessage(last.text, {

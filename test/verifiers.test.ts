@@ -50,6 +50,17 @@ describe('tests-pass verifier', () => {
     expect(verdict.command).toContain('test');
   });
 
+  test('writes evidence in plain words, with no dash or arrow connectors', async () => {
+    const cwd = tmpProject();
+    writeFileSync(
+      join(cwd, 'package.json'),
+      JSON.stringify({ name: 'x', scripts: { test: 'node -e "console.log(1); process.exit(1)"' } }),
+    );
+    const verdict = await verifyClaim(claim('tests-pass'), { cwd });
+    expect(verdict.evidence).not.toMatch(/[—→]/);
+    expect(verdict.evidence).toContain('exit 1');
+  });
+
   test('fails when the fresh test run exits non-zero', async () => {
     const cwd = tmpProject();
     writeFileSync(

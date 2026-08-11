@@ -58,7 +58,7 @@ async function verifyScript(
     return {
       claim,
       status: 'unverifiable',
-      evidence: `ran \`${command}\` — timed out before finishing`,
+      evidence: `ran \`${command}\` and it timed out before finishing`,
       command,
       outputHash: result.outputHash,
     };
@@ -71,15 +71,15 @@ async function verifyScript(
       command,
     };
   }
-  const summary = result.summaryLine.length > 0 ? ` — ${result.summaryLine}` : '';
-  // A green suite means less when the session shrank it. Notes, not verdicts:
-  // skipping can be legitimate, so the receipt shows it and does not accuse.
+  const summary = result.summaryLine.length > 0 ? ` ("${result.summaryLine}")` : '';
+  // A green suite means less when the session shrank it. These are notes, not
+  // verdicts. Skipping can be legitimate, so the receipt shows it and does not accuse.
   const census = scriptName === 'test' && result.exitCode === 0 ? censusFindings(ctx.cwd) : [];
-  const censusNote = census.length > 0 ? ` (note: ${census.join('; ')})` : '';
+  const censusNote = census.length > 0 ? ` (${census.join(', and ')})` : '';
   return {
     claim,
     status: result.exitCode === 0 ? 'verified' : 'failed',
-    evidence: `ran \`${command}\` fresh → exit ${result.exitCode}${summary}${censusNote}`,
+    evidence: `ran \`${command}\` fresh, exit ${result.exitCode}${summary}${censusNote}`,
     command,
     exitCode: result.exitCode,
     outputHash: result.outputHash,
@@ -96,7 +96,7 @@ function verifyFileCreated(claim: Claim, ctx: VerifyContext): Verdict {
     return {
       claim,
       status: 'unverifiable',
-      evidence: `path ${claim.subject} is outside the project; nuhuh only checks inside it`,
+      evidence: `path ${claim.subject} is outside the project, and nuhuh only checks inside it`,
     };
   }
   try {
@@ -143,7 +143,7 @@ function verifyEnvSet(claim: Claim, ctx: VerifyContext): Verdict {
     }
     seen.push(file);
     if (keyLine.test(content)) {
-      // Presence only — the value never enters the receipt.
+      // Presence only. The value never enters the receipt.
       return { claim, status: 'verified', evidence: `${claim.subject} is set in ${file}` };
     }
   }
@@ -167,7 +167,7 @@ function verifyNegativeExistence(claim: Claim, ctx: VerifyContext): Verdict {
     return {
       claim,
       status: 'unverifiable',
-      evidence: `path ${claim.subject} is outside the project; nuhuh only checks inside it`,
+      evidence: `path ${claim.subject} is outside the project, and nuhuh only checks inside it`,
     };
   }
   try {
@@ -194,7 +194,7 @@ async function verifyEndpoint(claim: Claim, ctx: VerifyContext): Promise<Verdict
     return {
       claim,
       status: 'unverifiable',
-      evidence: `only local endpoints are probed; ${url.hostname} is not local`,
+      evidence: `only local endpoints are probed, and ${url.hostname} is not local`,
     };
   }
   try {
@@ -207,13 +207,13 @@ async function verifyEndpoint(claim: Claim, ctx: VerifyContext): Promise<Verdict
     return {
       claim,
       status: ok ? 'verified' : 'failed',
-      evidence: `GET ${url.pathname || '/'} → ${response.status}`,
+      evidence: `GET ${url.pathname || '/'} answered ${response.status}`,
     };
   } catch {
     return {
       claim,
       status: 'unverifiable',
-      evidence: `nothing answered at ${url.host} — the server may simply not be running, so this proves nothing either way`,
+      evidence: `nothing answered at ${url.host}. the server may simply not be running, so this proves nothing either way`,
     };
   }
 }

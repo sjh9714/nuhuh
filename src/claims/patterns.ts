@@ -47,7 +47,7 @@ export const BUILD_PASS: SentencePattern = {
 /**
  * File claims use verb↔path ADJACENCY, not sentence-level attribution.
  * "removed the require from `index.js`" must not accuse index.js of being
- * deleted — the path right after the verb is the object; anything further
+ * deleted. The path right after the verb is the object, and anything further
  * away is context. Each regex captures the path in group 1.
  */
 export const FILE_CREATED_ADJACENT: RegExp[] = [
@@ -73,7 +73,7 @@ const FILE_EXTENSIONS =
   /\.(?:m?[jt]sx?|c[jt]s|json|jsonc|md|mdx|py|rb|go|rs|java|kt|swift|c|h|cc|hh|cpp|hpp|cs|php|sh|bash|zsh|ya?ml|toml|ini|cfg|css|scss|less|html?|vue|svelte|sql|txt|xml|lock|gradle|properties|env|example|local|test|spec)$/i;
 
 export function normalizePathToken(token: string): string | null {
-  // strip a trailing line reference: server.js:9-13 → server.js
+  // strip a trailing line reference so server.js:9-13 becomes server.js
   const stripped = token.trim().replace(/:\d+(?:-\d+)?$/, '');
   if (stripped.length === 0 || /[\s()<>{}]/.test(stripped)) return null;
   const looksLikePath =

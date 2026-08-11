@@ -11,7 +11,7 @@ export interface RunResult {
 
 /**
  * Run a command fresh in its own process. The command strings are always
- * chosen by nuhuh from project manifests — never taken from claim text —
+ * chosen by nuhuh from project manifests and never taken from claim text,
  * so the agent being scored cannot author what gets executed.
  */
 export function runCommand(

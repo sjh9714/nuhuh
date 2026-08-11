@@ -10,21 +10,21 @@ function hasFlag(args: string[], flag: string): boolean {
   return args.includes(flag);
 }
 
-const HELP = `nuhuh — your agent said Done. nuhuh runs the experiment.
+const HELP = `nuhuh. your agent said Done, and nuhuh runs the experiment.
 
-usage:
+commands
   nuhuh            verify the completion claims of the latest Claude Code
                    session for this directory, against reality, fresh
   nuhuh demo       watch nuhuh catch a staged false "Done" (no setup needed)
   nuhuh init       install the completion gate for this project
                    (--global for every project on this machine)
   nuhuh uninit     remove the gate again
-  nuhuh gate       (used by the Stop hook; reads hook JSON on stdin)
+  nuhuh gate       used by the Stop hook, reads hook JSON on stdin
   nuhuh --json     machine-readable verdicts
   nuhuh --no-color plain output
 
-disable temporarily: NUHUH_OFF=1
-exit codes: 0 nothing failed · 1 a claim failed the experiment · 2 usage error
+pause it any time with NUHUH_OFF=1
+exit code 0 means nothing failed, 1 means a claim failed the experiment, 2 means usage error
 `;
 
 async function readStdin(): Promise<string> {
@@ -88,7 +88,7 @@ async function main(): Promise<number> {
 
   if (command === 'demo') {
     const { receipt, exitCode, message } = await runDemo({ color });
-    process.stdout.write(`the "agent" said:\n\n  ${message}\n\n${receipt}\n`);
+    process.stdout.write(`what the "agent" said\n\n  ${message}\n\n${receipt}\n`);
     return exitCode;
   }
 
@@ -100,9 +100,9 @@ async function main(): Promise<number> {
     const path = settingsPath(hasFlag(args, '--global'));
     installHook(path);
     process.stdout.write(
-      `nuhuh gate installed → ${path}\n` +
+      `nuhuh gate installed at ${path}\n` +
         `from now on, "Done" only counts when the receipt is green.\n` +
-        `undo: nuhuh uninit${hasFlag(args, '--global') ? ' --global' : ''} · pause: NUHUH_OFF=1\n`,
+        `remove it with nuhuh uninit${hasFlag(args, '--global') ? ' --global' : ''}, pause it with NUHUH_OFF=1\n`,
     );
     return 0;
   }

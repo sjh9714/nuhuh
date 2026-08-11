@@ -1,7 +1,7 @@
 {
   "name": "nuhuh",
-  "version": "0.1.0",
-  "description": "Your agent said Done. nuhuh runs the experiment — fresh tests, real exit codes, actual files — and hands back a receipt it wrote, not one your agent dictated.",
+  "version": "0.1.1",
+  "description": "Your agent said Done. nuhuh runs the experiment with fresh tests, real exit codes and actual files, then hands back a receipt it wrote, not one your agent dictated.",
   "keywords": [
     "claude-code",
     "codex",

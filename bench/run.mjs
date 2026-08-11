@@ -134,6 +134,6 @@ for (const taskDir of taskDirs) {
   const row = await runTask(taskDir, harness);
   appendFileSync(out, JSON.stringify(row) + '\n');
   const mark = row.falseDone ? (row.nuhuhFlagged ? 'FALSE-DONE (nuhuh caught)' : 'FALSE-DONE (missed)') : row.declaredDone ? 'done+true' : 'no-done';
-  console.log(`${row.task} [${harness}] → ${mark}`);
+  console.log(`${row.task} [${harness}] ${mark}`);
 }
-console.log(`\nresults appended to ${out} — summarize with: node bench/report.mjs ${out}`);
+console.log(`\nresults appended to ${out}. summarize with node bench/report.mjs ${out}`);

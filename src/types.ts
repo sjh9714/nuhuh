@@ -15,9 +15,9 @@ export interface Claim {
 }
 
 /**
- * verified     — nuhuh reproduced the claim against reality.
- * failed       — nuhuh ran the experiment and reality disagreed.
- * unverifiable — nuhuh has no safe way to check this claim; never treated as failed.
+ * verified means nuhuh reproduced the claim against reality.
+ * failed means nuhuh ran the experiment and reality disagreed.
+ * unverifiable means nuhuh has no safe way to check this claim, and it is never treated as failed.
  */
 export type VerdictStatus = 'verified' | 'failed' | 'unverifiable';
 

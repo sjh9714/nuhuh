@@ -5,7 +5,7 @@ import { verifyMessage } from './app.js';
 
 /**
  * A staged session: the "agent" makes four claims, two of them false,
- * inside a throwaway project — so anyone can watch nuhuh catch a lie
+ * inside a throwaway project, so anyone can watch nuhuh catch a lie
  * without having a real session on disk.
  */
 export async function runDemo(opts: { color: boolean }): Promise<{

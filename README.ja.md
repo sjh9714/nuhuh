@@ -1,0 +1,143 @@
+<h1 align="center">nuhuh</h1>
+
+<p align="center">
+  <em>エージェントが「完了しました」と言ったら、nuhuh は実験で確かめます。</em>
+</p>
+
+<p align="center">
+  <a href="https://www.npmjs.com/package/nuhuh"><img src="https://img.shields.io/npm/v/nuhuh?style=flat-square&color=111111&label=npm" alt="npm"></a>
+  <a href="https://github.com/sjh9714/nuhuh/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/sjh9714/nuhuh/ci.yml?branch=main&style=flat-square&color=111111&label=ci" alt="CI"></a>
+  <img src="https://img.shields.io/node/v/nuhuh?style=flat-square&color=111111" alt="Node">
+  <img src="https://img.shields.io/badge/license-MIT-111111?style=flat-square" alt="MIT license">
+</p>
+
+<p align="center">
+  <sub><a href="README.md">English</a> · <a href="README.ko.md">한국어</a> · <a href="README.zh-CN.md">简体中文</a></sub>
+</p>
+
+<p align="center">
+  <img src="docs/demo.gif" width="880" alt="nuhuh のデモ。エージェントが4つの完了を主張し、nuhuh が現実を再実行して、そのうち2つが偽りだと突き止めます">
+</p>
+
+コーディングエージェントは、ほとんどのタスクを同じ言葉で締めくくります。**「完了しました！テストもすべて通っています。」**
+それが本当のこともあります。しかし実測した研究によれば、自己採点した失敗ランのうち
+[**75.8% がそれでも成功を主張**](https://arxiv.org/abs/2606.09863)していました。
+そして偽りの完了は、たいてい diff の中ではなく外にあります。一度も実行されなかった
+テスト、設定されなかった環境変数、500 を返すエンドポイントの中に。
+
+nuhuh は diff を読まず、モデルに意見も聞きません。エージェントの最後のメッセージから
+主張をひとつずつ取り出し、**現実をあらためて実行し直します**。クリーンなプロセスで
+テストスイート全体を、ビルドを、ディスク上のファイルを、ローカルのエンドポイントを。
+そして、エージェントが口述したレシートではなく、nuhuh 自身が書いたレシートを発行します。
+
+```
+🧾 receipt
+
+✅ src/login.ts
+   src/login.ts exists (33 bytes)
+❌ src/login.test.ts
+   src/login.test.ts does not exist
+❌ All tests pass.
+   ran `npm test` fresh, exit 1 ("Tests: 1 failed, 3 passed")
+✅ The build succeeds.
+   ran `npm run build` fresh, exit 0
+
+2 of 4 claims verified, 2 failed.
+```
+
+## 10 秒で試す
+
+```bash
+npx nuhuh demo    # 仕込まれた偽の「完了」を捕まえる場面を見る。設定不要で、何にも触れません
+npx nuhuh         # 任意のプロジェクトで、直近セッションの本物の「完了」を検証する
+```
+
+nuhuh はディスク上にすでにある Claude Code のセッションログを読み、フォールバックとして
+Codex のロールアウトも読みます。最後のメッセージから完了の主張を抽出し、それぞれを
+ワーキングツリーと突き合わせます。アカウント不要、API キー不要、**モデル呼び出しゼロ**。
+何もマシンの外に出ません。
+
+## ゲートモード、「完了」が気分ではなくなる瞬間
+
+```bash
+npx nuhuh init
+```
+
+Stop フックがインストールされます。以後、エージェントが作業を終えようとするたびに、
+
+1. 最後のメッセージから主張を抽出し
+2. 実験を回します（テストの新規実行、ビルド、ファイル、エンドポイント、env）
+3. **偽りの主張があれば「完了」を拒否し**、失敗の証拠をそのままエージェントに
+   返して作業に戻します
+4. 3 回弾いてもだめなら議論をやめ、レシートを人間に渡します
+
+エージェントが実行したと誓ったテストを自分で再実行する役目が消えます。
+`nuhuh uninit` で削除、`NUHUH_OFF=1` で一時停止できます。
+
+## 何を検査するのか
+
+| エージェントの言葉 | nuhuh の行動 |
+| --- | --- |
+| 「テストはすべて通っています」 | **スイート全体**をクリーンなプロセスで新しく実行し、文章ではなく終了コードを読みます。セッションが `.skip` や `.only` や `xit` を追加した場合も記録します。走らないテストは失敗できないからです |
+| 「ビルドは成功します」 | ビルドスクリプトを実行し、終了コードが判定します |
+| 「`src/x.ts` を作成しました」 | ファイルが本当にあるか確認します |
+| 「`legacy.js` を削除しました」または「X は存在しません」 | 本当に無いか確認します |
+| 「localhost:3000 のエンドポイントは動きます」 | 実際に呼び出します（ローカルホスト以外は決して触りません） |
+| 「`DATABASE_URL` を .env に設定しました」 | キーの存在だけを確認し、値は決してレシートに載せません |
+
+主張のマッチングは現在、英語と韓国語に対応しています。パターンは
+[データファイル](src/claims/patterns.ts)なので、言語の追加はフォークではなく PR です。
+
+## なぜ LLM に検査させないのか
+
+測定済みで、できないからです。5 つのジャッジモデルと 5 つのプロンプト戦略の
+すべてで、LLM ジャッジの偽完了検出力は [**AUROC 0.54 から 0.65**](https://arxiv.org/abs/2606.09863)、
+コイントス並みでした。「検証された状態変化ではなく、自信に満ちた締めの文体のような
+表面的な完了シグナルに依存する」ためです。テストランナーは失敗するスイートを 1.0 で
+検出します。nuhuh は Stop フックをまとったテストランナーです。**検証経路に LLM 呼び出し
+ゼロ、決定論的、同じセッションなら同じレシート。**
+
+diff を読む方式には逆の盲点があります。diff を正解として読むレビュアーは、diff の
+外にある見落としを見られません。設定されていない環境変数、実行されていない
+マイグレーション、待ち受けていないサーバー。まさにその主張を nuhuh が突きます。
+
+## False Done Rate ベンチマーク
+
+`bench/` には、ハーネスごとに「完了」がどれほど頻繁に偽りか、**そのうち nuhuh が
+いくつ捕まえ、いくつ見逃したか**まで測る再現可能なベンチマークがあります。
+グラウンドトゥルースは nuhuh を一切知らない決定論的な `check.sh` スクリプト群なので、
+このベンチマークは nuhuh 自身の盲点も暴きます。
+
+実際に暴きました。最初のライブ実行で nuhuh の誤検知 4 種（行番号参照をパスと誤認、
+コード識別子をパスと誤認、削除対象の誤帰属、`.env.example` に記載されたキーへの濡れ衣）が
+見つかり、それぞれ永久回帰テストとして固定されています。方法論と正直な限界は
+[bench/README.md](bench/README.md) にあります。
+
+## しないこと
+
+- コードが*良いか*は教えられません。エージェントが**言ったこと**とあなたのマシンが
+  **実際にすること**が一致するかを教えます。より小さい、しかし検証可能な主張です。
+- 安全に検査する手段のない主張は `⚠️ unverifiable` と表示するだけで、決して
+  `failed` にはしません。タイムアウトは何も証明しないので失敗扱いしません。
+  このツールは濡れ衣より見逃しを選ぶよう調整されています。
+- localhost 以外は決して触らず、プロジェクトの中だけを読み、プロジェクト自身の
+  マニフェストに定義されたコマンドだけを実行します。エージェントのテキスト由来の
+  コマンドは決して実行しません。
+
+## 関連プロジェクト
+
+- [taskmaster](https://github.com/blader/taskmaster) はエージェントが完了と*言う*まで働かせ、その完了トークンを信頼します。nuhuh は再実行できるもの以外を信頼しません。
+- [tdd-guard](https://github.com/nizos/tdd-guard) と [probity](https://github.com/nizos/probity) は*編集中*のプロセス（テストファースト）を強制します。nuhuh は「完了」時点の結果を検証します。併用できます。
+- [agent-done-or-not](https://github.com/mohamedzhioua/agent-done-or-not) はエージェントがラップすることを選んだコマンドのレシートを記録します。nuhuh はエージェントの協力を必要とせず、自然言語から主張を抽出して再実行します。
+- [backcheck](https://github.com/VectorInstitute/backcheck) と [agent-receipts](https://github.com/0xelitesystem/agent-receipts) は*トランスクリプト*が語る過去を監査します。nuhuh は*いま*何が真実かを検証します。
+- Claude Code 自身の `/verify` は diff を正解として読み、明示的にテストを実行しません。nuhuh は diff の外のバグのために存在します。
+
+## 動作要件
+
+Node 20 以上。Claude Code のセッションは `~/.claude/projects` から、Codex の
+ロールアウトは `~/.codex` から読みます。テストとビルドの新規実行はプロジェクト
+自身の `package.json` スクリプトを使い、pnpm、yarn、bun はロックファイルで検出します。
+
+## License
+
+MIT

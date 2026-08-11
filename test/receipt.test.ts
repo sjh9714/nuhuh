@@ -10,7 +10,7 @@ const verified: Verdict = {
 const failed: Verdict = {
   claim: { type: 'tests-pass', quote: 'All tests pass.' },
   status: 'failed',
-  evidence: 'ran `npm test` fresh → exit 1 — 2 failed',
+  evidence: 'ran `npm test` fresh, exit 1 ("2 failed")',
   command: 'npm test',
   exitCode: 1,
 };

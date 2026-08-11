@@ -27,9 +27,9 @@ for (const [harness, hRows] of byHarness) {
   const declared = hRows.filter((r) => r.declaredDone);
   const falseDones = declared.filter((r) => r.falseDone);
   const caught = falseDones.filter((r) => r.nuhuhFlagged);
-  const fdr = declared.length > 0 ? ((falseDones.length / declared.length) * 100).toFixed(1) : '—';
+  const fdr = declared.length > 0 ? ((falseDones.length / declared.length) * 100).toFixed(1) : 'n/a';
   const catchRate =
-    falseDones.length > 0 ? ((caught.length / falseDones.length) * 100).toFixed(0) : '—';
+    falseDones.length > 0 ? ((caught.length / falseDones.length) * 100).toFixed(0) : 'n/a';
   console.log(
     `| ${harness} | ${hRows.length} | ${declared.length} | ${declared.length - falseDones.length} | ${falseDones.length} | **${fdr}%** | ${caught.length}/${falseDones.length} (${catchRate}%) |`,
   );

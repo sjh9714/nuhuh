@@ -69,17 +69,19 @@ export async function decideGate(input: GateInput): Promise<GateDecision> {
   if (bounces >= input.maxBounces) {
     return {
       action: 'allow',
-      warning: `nuhuh: still ${failed.length} failing claim(s) after ${input.maxBounces} bounces — handing back to the human. Run \`npx nuhuh\` to see the receipt.`,
+      warning: `nuhuh gave up after ${input.maxBounces} bounces with ${failed.length} claim(s) still failing. Run \`npx nuhuh\` to see the receipt.`,
       receipt,
     };
   }
   writeBounces(stateDir, input.sessionId, bounces + 1);
 
-  const evidence = failed.map((v) => `- claimed: "${v.claim.quote}" — reality: ${v.evidence}`).join('\n');
+  const evidence = failed
+    .map((v) => `- you said "${v.claim.quote}" and reality says ${v.evidence}`)
+    .join('\n');
   return {
     action: 'block',
     reason:
-      `nuhuh verified your completion claims against reality and ${failed.length} of them failed:\n` +
+      `nuhuh checked your completion claims against reality and ${failed.length} of them failed.\n` +
       `${evidence}\n` +
       `Fix the work until these claims are actually true, then finish. ` +
       `Do not weaken or delete checks to make them pass.`,

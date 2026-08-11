@@ -7,7 +7,7 @@
     {
       "name": "nuhuh",
       "source": "./",
-      "description": "Your agent said Done. nuhuh runs the experiment — and bounces the agent until the receipt is green."
+      "description": "Your agent said Done. nuhuh runs the experiment and bounces the agent until the receipt is green."
     }
   ]
 }

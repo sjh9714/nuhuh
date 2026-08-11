@@ -3,7 +3,7 @@ import { execFileSync } from 'node:child_process';
 /**
  * A test that no longer runs cannot fail. This scans what the session changed
  * (uncommitted work, staged and unstaged) for newly added skip/only markers in
- * test files — the classic way a suite gets to green without getting fixed.
+ * test files, the classic way a suite gets to green without getting fixed.
  *
  * Findings are notes, not verdicts: skipping a test is sometimes exactly what
  * the human asked for. The receipt shows them; it does not accuse.
