@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { postHoc } from './app.js';
 import { runDemo } from './demo.js';
 import { decideGate } from './gate/gate.js';
+import { defaultLogDir, readDecisionLog, renderDecisionLog } from './gate/decision-log.js';
 import { installHook, uninstallHook } from './gate/install.js';
 
 function hasFlag(args: string[], flag: string): boolean {
@@ -20,6 +21,7 @@ commands
                    (--global for every project on this machine)
   nuhuh uninit     remove the gate again
   nuhuh gate       used by the Stop hook, reads hook JSON on stdin
+  nuhuh log        what the gate actually did, one line per decision
   nuhuh --json     machine-readable verdicts
   nuhuh --no-color plain output
 
@@ -94,6 +96,11 @@ async function main(): Promise<number> {
 
   if (command === 'gate') {
     return runGate();
+  }
+
+  if (command === 'log') {
+    process.stdout.write(renderDecisionLog(readDecisionLog(defaultLogDir())) + '\n');
+    return 0;
   }
 
   if (command === 'init') {

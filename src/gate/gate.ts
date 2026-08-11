@@ -3,6 +3,7 @@ import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { verifyMessage } from '../app.js';
 import { lastAssistantText } from '../transcript/claude-code.js';
+import { appendDecision, defaultLogDir } from './decision-log.js';
 
 export interface GateInput {
   transcriptPath: string;
@@ -12,6 +13,8 @@ export interface GateInput {
   maxBounces: number;
   /** Where bounce counts are kept; defaults to ~/.nuhuh/state. */
   stateDir?: string;
+  /** Where the decision log lives; defaults to ~/.nuhuh. */
+  logDir?: string;
   env: Record<string, string | undefined>;
   timeoutMs?: number;
 }
@@ -59,14 +62,31 @@ export async function decideGate(input: GateInput): Promise<GateDecision> {
     color: false,
     timeoutMs: input.timeoutMs,
   });
+  const logDecision = (action: 'allow' | 'block', bounces: number) => {
+    if (verdicts.length === 0) return;
+    appendDecision(input.logDir ?? defaultLogDir(), {
+      at: new Date().toISOString(),
+      sessionId: input.sessionId,
+      cwd: input.cwd,
+      action,
+      bounces,
+      verdicts: verdicts.map((v) => ({
+        type: v.claim.type,
+        status: v.status,
+        evidence: v.evidence,
+      })),
+    });
+  };
   const failed = verdicts.filter((v) => v.status === 'failed');
   if (failed.length === 0) {
     writeBounces(stateDir, input.sessionId, 0);
+    logDecision('allow', 0);
     return { action: 'allow', receipt };
   }
 
   const bounces = readBounces(stateDir, input.sessionId);
   if (bounces >= input.maxBounces) {
+    logDecision('allow', bounces);
     return {
       action: 'allow',
       warning: `nuhuh gave up after ${input.maxBounces} bounces with ${failed.length} claim(s) still failing. Run \`npx nuhuh\` to see the receipt.`,
@@ -74,6 +94,7 @@ export async function decideGate(input: GateInput): Promise<GateDecision> {
     };
   }
   writeBounces(stateDir, input.sessionId, bounces + 1);
+  logDecision('block', bounces + 1);
 
   const evidence = failed
     .map((v) => `- you said "${v.claim.quote}" and reality says ${v.evidence}`)
