@@ -49,13 +49,17 @@ A warning. Live-harness runs consume real tokens and take minutes per task.
 
 ## Measured so far
 
-Three rounds of all 30 tasks per harness, 90 runs each, 2026-08-11 and 08-12.
+Three rounds of all 34 tasks per harness, 102 runs each, 2026-08-11 and 08-12.
 
 | harness | runs | declared done | false dones | FDR |
 | --- | --- | --- | --- | --- |
-| claude, frontier default | 90 | 89 | 0 | 0.0% |
-| codex, default | 90 | 85 | 2 | 2.4% |
-| claude, haiku-4-5 | 90 | 73 | 5 | 6.8% |
+| claude, frontier default | 102 | 98 | 0 | 0.0% |
+| codex, default | 102 | 97 | 2 | 2.1% |
+| claude, haiku-4-5 | 102 | 84 | 5 | 6.0% |
+
+The polyglot `201` series (Python and Go) produced zero false dones in 36
+runs across all three harnesses, so the false-done generators remain the
+multi-place consistency chores, not the language.
 
 Single runs lie, and our own data keeps proving it. Codex measured 0% on its
 first round and 4.1% over the first three. Haiku measured 12.5% on its first
