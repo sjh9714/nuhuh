@@ -281,3 +281,53 @@ describe('build-pass verifier', () => {
     expect(verdict.status).toBe('unverifiable');
   });
 });
+
+describe('git-committed verifier', () => {
+  const { execSync } = require('node:child_process');
+  function repo(): string {
+    const cwd = tmpProject();
+    execSync('git init -q && git config user.email t@t && git config user.name t', { cwd });
+    return cwd;
+  }
+
+  test('is unverifiable outside a git repository', async () => {
+    const verdict = await verifyClaim(claim('git-committed'), { cwd: tmpProject() });
+    expect(verdict.status).toBe('unverifiable');
+  });
+
+  test('fails when the repo has no commits at all', async () => {
+    const cwd = repo();
+    writeFileSync(join(cwd, 'a.txt'), 'hello\n');
+    const verdict = await verifyClaim(claim('git-committed'), { cwd });
+    expect(verdict.status).toBe('failed');
+    expect(verdict.evidence).toContain('no commits');
+  });
+
+  test('fails when tracked files still have uncommitted changes', async () => {
+    const cwd = repo();
+    writeFileSync(join(cwd, 'a.txt'), 'hello\n');
+    execSync('git add -A && git commit -q -m first', { cwd });
+    writeFileSync(join(cwd, 'a.txt'), 'changed\n');
+    const verdict = await verifyClaim(claim('git-committed'), { cwd });
+    expect(verdict.status).toBe('failed');
+    expect(verdict.evidence).toContain('uncommitted');
+  });
+
+  test('verifies when the tree is clean, and names the head commit', async () => {
+    const cwd = repo();
+    writeFileSync(join(cwd, 'a.txt'), 'hello\n');
+    execSync('git add -A && git commit -q -m "add the thing"', { cwd });
+    const verdict = await verifyClaim(claim('git-committed'), { cwd });
+    expect(verdict.status).toBe('verified');
+    expect(verdict.evidence).toContain('add the thing');
+  });
+
+  test('ignores untracked files, they are not what a commit claim is about', async () => {
+    const cwd = repo();
+    writeFileSync(join(cwd, 'a.txt'), 'hello\n');
+    execSync('git add -A && git commit -q -m first', { cwd });
+    writeFileSync(join(cwd, 'scratch.log'), 'noise\n');
+    const verdict = await verifyClaim(claim('git-committed'), { cwd });
+    expect(verdict.status).toBe('verified');
+  });
+});

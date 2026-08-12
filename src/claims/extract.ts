@@ -6,6 +6,7 @@ import {
   ENV_KEY,
   ENV_SET_VERBS,
   FILE_CREATED_ADJACENT,
+  GIT_COMMITTED,
   FILE_REMOVED_ADJACENT,
   LINT_PASS,
   TESTS_PASS,
@@ -50,6 +51,9 @@ export function extractClaims(message: string): Claim[] {
     }
     if (matches(sentence, LINT_PASS)) {
       claims.push({ type: 'lint-pass', quote: sentence });
+    }
+    if (matches(sentence, GIT_COMMITTED)) {
+      claims.push({ type: 'git-committed', quote: sentence });
     }
     const removedPaths = adjacentPaths(sentence, FILE_REMOVED_ADJACENT);
     for (const path of removedPaths) {

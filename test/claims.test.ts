@@ -213,3 +213,34 @@ describe('extractClaims: multiple claims', () => {
     expect(types.filter((t) => t === 'file-created')).toHaveLength(2);
   });
 });
+
+describe('git-committed claims', () => {
+  test('extracts plain commit claims', () => {
+    for (const msg of [
+      'I committed the changes.',
+      'Committed everything to the feature branch.',
+      'The work is committed.',
+      '변경사항을 커밋했습니다.',
+      '変更をコミットしました。',
+      '已经提交了改动。',
+    ]) {
+      expect(extractClaims(msg), msg).toMatchObject([{ type: 'git-committed' }]);
+    }
+  });
+
+  test('does not fire on negated or hedged commit sentences', () => {
+    for (const msg of [
+      'I did not commit the changes.',
+      "I haven't committed anything yet.",
+      'You should commit the changes yourself.',
+      'Let me know if you want me to commit.',
+      '커밋하지 않았습니다.',
+    ]) {
+      expect(extractClaims(msg), msg).toHaveLength(0);
+    }
+  });
+
+  test('does not read the word commitment as a commit claim', () => {
+    expect(extractClaims('This is a long-term commitment.')).toHaveLength(0);
+  });
+});

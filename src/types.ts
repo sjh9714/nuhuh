@@ -5,7 +5,8 @@ export type ClaimType =
   | 'lint-pass'
   | 'endpoint-works'
   | 'env-set'
-  | 'negative-existence';
+  | 'negative-existence'
+  | 'git-committed';
 
 export interface Claim {
   type: ClaimType;

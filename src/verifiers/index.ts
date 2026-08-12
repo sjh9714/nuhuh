@@ -1,3 +1,4 @@
+import { execFileSync } from 'node:child_process';
 import { readFileSync, statSync } from 'node:fs';
 import { join, resolve, sep } from 'node:path';
 import type { Claim, Verdict, VerifyContext } from '../types.js';
@@ -145,6 +146,43 @@ function verifyNegativeExistence(claim: Claim, ctx: VerifyContext): Verdict {
   }
 }
 
+/**
+ * Git reads only, and never through a shell, so nothing from the agent's text
+ * can reach a command line. Returns null when git itself fails.
+ */
+function git(cwd: string, args: string[]): string | null {
+  try {
+    return execFileSync('git', args, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
+  } catch {
+    return null;
+  }
+}
+
+function verifyGitCommitted(claim: Claim, ctx: VerifyContext): Verdict {
+  if (git(ctx.cwd, ['rev-parse', '--git-dir']) === null) {
+    return { claim, status: 'unverifiable', evidence: 'this directory is not a git repository' };
+  }
+  if (git(ctx.cwd, ['rev-parse', '--verify', 'HEAD']) === null) {
+    return { claim, status: 'failed', evidence: 'the repository has no commits' };
+  }
+  // Untracked files are deliberately ignored. A commit claim is about the work
+  // that was tracked, and scratch files would make this accuse honest runs.
+  const dirty = git(ctx.cwd, ['status', '--porcelain', '--untracked-files=no']);
+  if (dirty === null) {
+    return { claim, status: 'unverifiable', evidence: 'could not read the git status' };
+  }
+  if (dirty.length > 0) {
+    const files = dirty.split('\n').length;
+    return {
+      claim,
+      status: 'failed',
+      evidence: `${files} tracked file(s) still have uncommitted changes`,
+    };
+  }
+  const head = git(ctx.cwd, ['log', '-1', '--format=%h %s']) ?? '';
+  return { claim, status: 'verified', evidence: `the tree is clean at ${head}` };
+}
+
 const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1', '0.0.0.0', '[::1]']);
 
 async function verifyEndpoint(claim: Claim, ctx: VerifyContext): Promise<Verdict> {
@@ -201,5 +239,7 @@ export async function verifyClaim(claim: Claim, ctx: VerifyContext): Promise<Ver
       return verifyEnvSet(claim, ctx);
     case 'negative-existence':
       return verifyNegativeExistence(claim, ctx);
+    case 'git-committed':
+      return verifyGitCommitted(claim, ctx);
   }
 }

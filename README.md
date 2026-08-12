@@ -84,8 +84,8 @@ claim-free "Done!" is the single most common false completion we measured.
 ## The more you delegate, the more you need this
 
 Our own benchmark says the frontier model rarely lies about Done, 0.0% over
-90 runs. The false Dones came from the smaller, cheaper models, 6.8% for
-Haiku 4.5, 2.4% for Codex. Which is exactly where agent workflows are
+102 runs. The false Dones came from the smaller, cheaper models, 6.0% for
+Haiku 4.5, 2.1% for Codex. Which is exactly where agent workflows are
 heading: one strong orchestrator delegating to cheap workers, batch runs,
 CI pipelines nobody watches. The gate is the safety belt for the delegated
 lane. Verify the cheap work mechanically, spend the expensive model on
@@ -101,6 +101,7 @@ judgment.
 | "I deleted `legacy.js`" or "there is no X" | checks it is really gone |
 | "the endpoint at localhost:3000 works" | actually calls it (local hosts only, ever) |
 | "I set `DATABASE_URL` in .env" | checks the key exists, and the value never enters the receipt |
+| "I committed the changes" | reads git, fails the claim when tracked files still have uncommitted changes |
 
 Claims are matched in English, Korean, Japanese and Simplified Chinese. The patterns are
 [a data file](src/claims/patterns.ts), so adding a language is a PR, not a fork.

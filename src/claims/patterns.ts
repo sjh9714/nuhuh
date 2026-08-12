@@ -135,6 +135,29 @@ export function normalizePathToken(token: string): string | null {
 export const DONE_WORDS =
   /\b(?:done|complete[d]?|finished|implemented|fixed|verified|ready|works\s+now|now\s+works)\b|완료|끝났|구현했|수정했|검증했|完了|完成/i;
 
+
+/**
+ * Commit claims. Only the past form counts, because "commit the changes" is
+ * usually an instruction or a plan, not a report. Miss, don't accuse.
+ */
+export const GIT_COMMITTED: SentencePattern = {
+  match: [
+    /\bcommitted\b/i,
+    // ko: 커밋(을/를) 했/완료/됐
+    /커밋(?:을|를)?\s*(?:했|완료|됐|되었)/,
+    // ja: コミットしました / コミット済み
+    /コミット(?:しました|した|済み|完了)/,
+    // zh: 提交了 / 已提交
+    /(?:提交了|已提交)/,
+  ],
+  negate: [
+    /\b(?:not|never|haven'?t|hasn'?t|didn'?t|isn'?t|won'?t|should|would|could|cannot|can'?t|need\s+to|want\s+me|please|before\s+you|once\s+you|if\s+you)\b/i,
+    /않|못|안\s*(?:했|됨)|말/,
+    /ない|ません|はず|でしょう/,
+    /没有|未提交|应该|可能|还没/,
+  ],
+};
+
 /** A URL plus one of these makes an endpoint-works claim. */
 export const ENDPOINT_WORKS_VERBS: RegExp[] = [
   /\b(?:works?|working|returns?|responds?|responding|serves?|serving|is\s+(?:up|live|running)|operational)\b/i,
