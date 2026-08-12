@@ -77,6 +77,19 @@ You stop being the person who re-runs the tests after the agent swears it did.
 By default a green receipt stays silent. Set `NUHUH_RECEIPT=always` and the
 gate prints the success receipt into the session too, so the agent never
 learns that a confident sentence is enough on its own.
+`NUHUH_STRICT=1` goes one step further and bounces a completion declaration
+that carries no checkable claim at all, asking for evidence instead. That
+claim-free "Done!" is the single most common false completion we measured.
+
+## The more you delegate, the more you need this
+
+Our own benchmark says the frontier model rarely lies about Done, 0.0% over
+90 runs. The false Dones came from the smaller, cheaper models, 6.8% for
+Haiku 4.5, 2.4% for Codex. Which is exactly where agent workflows are
+heading: one strong orchestrator delegating to cheap workers, batch runs,
+CI pipelines nobody watches. The gate is the safety belt for the delegated
+lane. Verify the cheap work mechanically, spend the expensive model on
+judgment.
 
 ## What it checks
 

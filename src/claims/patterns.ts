@@ -127,6 +127,14 @@ export function normalizePathToken(token: string): string | null {
   return looksLikePath ? stripped : null;
 }
 
+/**
+ * Words that declare completion without necessarily claiming anything
+ * checkable. Used by the gate's opt-in strict mode: a done-declaration with
+ * zero extractable claims is bounced with a request for checkable evidence.
+ */
+export const DONE_WORDS =
+  /\b(?:done|complete[d]?|finished|implemented|fixed|verified|ready|works\s+now|now\s+works)\b|완료|끝났|구현했|수정했|검증했|完了|完成/i;
+
 /** A URL plus one of these makes an endpoint-works claim. */
 export const ENDPOINT_WORKS_VERBS: RegExp[] = [
   /\b(?:works?|working|returns?|responds?|responding|serves?|serving|is\s+(?:up|live|running)|operational)\b/i,

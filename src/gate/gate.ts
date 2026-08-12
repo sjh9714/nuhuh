@@ -2,6 +2,7 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { verifyMessage } from '../app.js';
+import { DONE_WORDS } from '../claims/patterns.js';
 import { lastAssistantText } from '../transcript/claude-code.js';
 import { appendDecision, defaultLogDir } from './decision-log.js';
 
@@ -109,7 +110,12 @@ export async function decideGate(input: GateInput): Promise<GateDecision> {
     });
   };
   const failed = verdicts.filter((v) => v.status === 'failed');
-  if (failed.length === 0) {
+  // The measured blind spot of claim verification: every false Done in the
+  // benchmark carried zero checkable claims. Strict mode (opt-in) bounces a
+  // completion declaration that gives the verifier nothing to grab.
+  const claimlessDone =
+    input.env['NUHUH_STRICT'] === '1' && verdicts.length === 0 && DONE_WORDS.test(last.text);
+  if (failed.length === 0 && !claimlessDone) {
     writeState(stateDir, input.sessionId, { bounces: 0 });
     logDecision('allow', 0);
     // A receipt with zero checkable claims would be pure noise on every stop,
@@ -118,9 +124,12 @@ export async function decideGate(input: GateInput): Promise<GateDecision> {
   }
 
   const state = readState(stateDir, input.sessionId);
-  const failureSignature = failed
-    .map((v) => `${v.claim.type}|${v.claim.subject ?? ''}|${v.evidence}`)
-    .join('\n');
+  const failureSignature =
+    failed.length > 0
+      ? failed
+          .map((v) => `${v.claim.type}|${v.claim.subject ?? ''}|${v.evidence}`)
+          .join('\n')
+      : 'claimless-done';
 
   // Two identical failures in a row mean the diagnosis is wrong, and another
   // bounce would only make a bigger mess. Hand back to the human early.
@@ -146,6 +155,17 @@ export async function decideGate(input: GateInput): Promise<GateDecision> {
     lastFailure: failureSignature,
   });
   logDecision('block', state.bounces + 1);
+
+  if (failed.length === 0) {
+    // strict claimless-done bounce
+    return {
+      action: 'block',
+      reason:
+        `You declared completion but made no checkable claim, so nuhuh has nothing to verify.\n` +
+        `State what is true in checkable terms (tests pass, file created, endpoint responds) or show the evidence, then finish.`,
+      receipt,
+    };
+  }
 
   // A chatty deny reason on a hook that fires repeatedly becomes a recurring
   // context tax, so the reason stays at two lines: the first failure with its

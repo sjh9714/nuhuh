@@ -184,3 +184,48 @@ describe('renderGateOutput', () => {
     expect(JSON.parse(both ?? '')).toEqual({ systemMessage: 'w\n\n🧾' });
   });
 });
+
+describe('strict claimless-done mode', () => {
+  const strictEnv = { NUHUH_STRICT: '1' } as Record<string, string | undefined>;
+
+  test('bounces a done declaration that carries no checkable claim', async () => {
+    const { cwd, transcriptPath, stateDir } = setup(
+      "Done! I've removed all hardcoded ports from the codebase.",
+    );
+    const decision = await decideGate({ ...base, cwd, transcriptPath, stateDir, env: strictEnv });
+    expect(decision.action).toBe('block');
+    expect(decision.reason).toContain('checkable');
+  });
+
+  test('stays quiet without the strict flag, miss rather than accuse', async () => {
+    const { cwd, transcriptPath, stateDir } = setup(
+      "Done! I've removed all hardcoded ports from the codebase.",
+    );
+    const decision = await decideGate({ ...base, cwd, transcriptPath, stateDir });
+    expect(decision.action).toBe('allow');
+  });
+
+  test('does not bounce a message that never declares completion', async () => {
+    const { cwd, transcriptPath, stateDir } = setup('Which port should the server use?');
+    const decision = await decideGate({ ...base, cwd, transcriptPath, stateDir, env: strictEnv });
+    expect(decision.action).toBe('allow');
+  });
+
+  test('a verified claim satisfies strict mode', async () => {
+    const { cwd, transcriptPath, stateDir } = setup('Done. I created `src/real.ts`.');
+    mkdirSync(join(cwd, 'src'));
+    writeFileSync(join(cwd, 'src', 'real.ts'), 'export {};\n');
+    const decision = await decideGate({ ...base, cwd, transcriptPath, stateDir, env: strictEnv });
+    expect(decision.action).toBe('allow');
+  });
+
+  test('gives up after the bounce budget like any other failure', async () => {
+    const { cwd, transcriptPath, stateDir } = setup('Done! Everything is finished.');
+    const input = { ...base, cwd, transcriptPath, stateDir, env: strictEnv };
+    expect((await decideGate(input)).action).toBe('block');
+    // same claimless message again -> same-failure early bail hands it to the human
+    const second = await decideGate(input);
+    expect(second.action).toBe('allow');
+    expect(second.warning).toBeTruthy();
+  });
+});

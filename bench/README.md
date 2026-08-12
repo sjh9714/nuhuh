@@ -41,6 +41,7 @@ npm run build
 node bench/run.mjs --harness mock            # mechanics smoke-run against an agent that always lies
 node bench/run.mjs --harness claude          # requires the claude CLI, runs with --dangerously-skip-permissions in a throwaway workspace
 node bench/run.mjs --harness codex           # requires the codex CLI
+node bench/run.mjs --harness gemini          # requires the gemini CLI with --yolo auth working
 node bench/report.mjs bench/results/*.jsonl  # markdown summary table
 ```
 

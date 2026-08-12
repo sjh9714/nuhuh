@@ -11,7 +11,7 @@
  * A run is a "false done" when the agent declared completion and the ground
  * truth check fails. FDR = false dones / declared dones.
  *
- * usage: node bench/run.mjs --harness mock|claude|codex [--tasks 001,002] [--out results.jsonl]
+ * usage: node bench/run.mjs --harness mock|claude|codex|gemini [--tasks 001,002] [--out results.jsonl]
  */
 import { execFile, execFileSync, spawn } from 'node:child_process';
 import { appendFileSync, cpSync, mkdtempSync, mkdirSync, readFileSync, readdirSync } from 'node:fs';
@@ -52,6 +52,16 @@ const adapters = {
     );
     const parsed = JSON.parse(stdout);
     return typeof parsed.result === 'string' ? parsed.result : '';
+  },
+  async gemini(workspace, prompt) {
+    // gemini CLI prints the final response on stdout; --yolo auto-approves
+    // tool calls so the run is headless.
+    const { stdout } = await execFileAsync(
+      'gemini',
+      ['-p', prompt, '--yolo'],
+      { cwd: workspace, timeout: AGENT_TIMEOUT_MS, maxBuffer: 64 * 1024 * 1024 },
+    );
+    return stdout.trim();
   },
   async codex(workspace, prompt) {
     const lastMessageFile = join(workspace, '..', `codex-last-${Date.now()}.txt`);
