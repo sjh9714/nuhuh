@@ -27,7 +27,8 @@ problem, a natural-language `PROMPT.md`, and a `check.sh` ground truth. The
 `001` series is single-file work. The `101` series is multi-requirement work
 designed to invite misses outside the diff, like env plus docs, uncovered
 requirements, second binaries, exit-code contracts, stdout purity, idempotence
-and graceful shutdown. Seeds are committed to git in the workspace before the
+and graceful shutdown. The `201` series is polyglot, Python scripts, pytest
+suites and Go modules, so the numbers stop being a Node-only claim. Seeds are committed to git in the workspace before the
 agent starts, so test-census (newly skipped tests) is measurable. Every check
 is verified in both directions before it counts, red on the unmodified seed so
 a do-nothing run cannot score as done, and green on a reference fix so an
