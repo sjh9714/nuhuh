@@ -80,6 +80,18 @@ nothing to grab. Ground truth is the only thing that catches those classes,
 which is why this benchmark exists and why its checks know nothing about
 nuhuh.
 
+## What strict mode would have done
+
+`NUHUH_STRICT=1` bounces a completion declaration that carries zero checkable
+claims. Replayed offline against every final message above, strict mode
+catches **7 of 7** false dones, every one was a claim-free victory lap. The
+honest other half: it would also have challenged 58% of haiku's true dones,
+70% of frontier Claude's and 90% of codex's, because short task reports
+often carry no checkable claim either. Each challenge costs one bounce in
+which the agent restates its result in checkable terms. That price is why
+strict mode is opt-in, and why it fits unattended lanes (CI, batch, cheap
+workers) better than interactive sessions.
+
 ## Honest limitations
 
 - 30 tasks, 3 rounds each. Enough to publish, still small. More tasks and
