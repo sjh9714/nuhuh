@@ -2,7 +2,7 @@ import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, test } from 'vitest';
-import { decideGate } from '../src/gate/gate.js';
+import { decideGate, renderGateOutput } from '../src/gate/gate.js';
 
 function setup(finalMessage: string): {
   cwd: string;
@@ -137,5 +137,50 @@ describe('decideGate', () => {
     await decideGate(a);
     expect((await decideGate(a)).action).toBe('allow');
     expect((await decideGate(b)).action).toBe('block');
+  });
+});
+
+describe('receipt on allow', () => {
+  test('an allow with verified claims carries the receipt', async () => {
+    const { cwd, transcriptPath, stateDir } = setup('Done. I created `src/real.ts`.');
+    mkdirSync(join(cwd, 'src'));
+    writeFileSync(join(cwd, 'src', 'real.ts'), 'export {};\n');
+    const decision = await decideGate({ ...base, cwd, transcriptPath, stateDir });
+    expect(decision.action).toBe('allow');
+    expect(decision.receipt).toContain('src/real.ts');
+  });
+
+  test('an allow with no checkable claims carries no receipt', async () => {
+    const { cwd, transcriptPath, stateDir } = setup('Let me know what you think.');
+    const decision = await decideGate({ ...base, cwd, transcriptPath, stateDir });
+    expect(decision.action).toBe('allow');
+    expect(decision.receipt).toBeUndefined();
+  });
+});
+
+describe('renderGateOutput', () => {
+  test('blocks render a block decision', () => {
+    const out = renderGateOutput({ action: 'block', reason: 'r' }, {});
+    expect(JSON.parse(out ?? '')).toEqual({ decision: 'block', reason: 'r' });
+  });
+
+  test('a clean allow stays silent by default', () => {
+    expect(renderGateOutput({ action: 'allow', receipt: '🧾' }, {})).toBeNull();
+  });
+
+  test('NUHUH_RECEIPT=always surfaces the success receipt', () => {
+    const out = renderGateOutput({ action: 'allow', receipt: '🧾 receipt' }, { NUHUH_RECEIPT: 'always' });
+    expect(JSON.parse(out ?? '')).toEqual({ systemMessage: '🧾 receipt' });
+  });
+
+  test('NUHUH_RECEIPT=always with no receipt stays silent', () => {
+    expect(renderGateOutput({ action: 'allow' }, { NUHUH_RECEIPT: 'always' })).toBeNull();
+  });
+
+  test('a warning still renders, and always mode appends the receipt', () => {
+    const plain = renderGateOutput({ action: 'allow', warning: 'w', receipt: '🧾' }, {});
+    expect(JSON.parse(plain ?? '')).toEqual({ systemMessage: 'w' });
+    const both = renderGateOutput({ action: 'allow', warning: 'w', receipt: '🧾' }, { NUHUH_RECEIPT: 'always' });
+    expect(JSON.parse(both ?? '')).toEqual({ systemMessage: 'w\n\n🧾' });
   });
 });

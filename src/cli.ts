@@ -3,7 +3,7 @@ import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { postHoc } from './app.js';
 import { runDemo } from './demo.js';
-import { decideGate } from './gate/gate.js';
+import { decideGate, renderGateOutput } from './gate/gate.js';
 import { defaultLogDir, readDecisionLog, renderDecisionLog } from './gate/decision-log.js';
 import { installHook, uninstallHook } from './gate/install.js';
 
@@ -60,11 +60,8 @@ async function runGate(): Promise<number> {
       maxBounces: 3,
       env: process.env,
     });
-    if (decision.action === 'block' && decision.reason) {
-      process.stdout.write(JSON.stringify({ decision: 'block', reason: decision.reason }) + '\n');
-    } else if (decision.warning) {
-      process.stdout.write(JSON.stringify({ systemMessage: decision.warning }) + '\n');
-    }
+    const output = renderGateOutput(decision, process.env);
+    if (output) process.stdout.write(output + '\n');
     return 0;
   } catch {
     return 0;

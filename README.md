@@ -74,6 +74,9 @@ That installs a Stop hook. From then on, every time the agent tries to finish,
 You stop being the person who re-runs the tests after the agent swears it did.
 `nuhuh log` shows what the gate actually did, one line per decision.
 `nuhuh uninit` removes it, and `NUHUH_OFF=1` pauses it for a session.
+By default a green receipt stays silent. Set `NUHUH_RECEIPT=always` and the
+gate prints the success receipt into the session too, so the agent never
+learns that a confident sentence is enough on its own.
 
 ## What it checks
 

@@ -32,6 +32,31 @@ export function defaultStateDir(): string {
   return join(homedir(), '.nuhuh', 'state');
 }
 
+/**
+ * What the Stop hook should print for a decision, or null for silence.
+ * By default a clean allow is silent to keep bounces cheap in context.
+ * NUHUH_RECEIPT=always surfaces the success receipt too, so the agent never
+ * learns that a green sentence is enough on its own (suggested by a
+ * launch-article commenter, issue 8).
+ */
+export function renderGateOutput(
+  decision: GateDecision,
+  env: Record<string, string | undefined>,
+): string | null {
+  if (decision.action === 'block' && decision.reason) {
+    return JSON.stringify({ decision: 'block', reason: decision.reason });
+  }
+  const wantReceipt = env['NUHUH_RECEIPT'] === 'always' && decision.receipt;
+  if (decision.warning) {
+    const message = wantReceipt ? `${decision.warning}\n\n${decision.receipt}` : decision.warning;
+    return JSON.stringify({ systemMessage: message });
+  }
+  if (wantReceipt) {
+    return JSON.stringify({ systemMessage: decision.receipt });
+  }
+  return null;
+}
+
 interface GateState {
   bounces: number;
   /** What failed last time, so a repeat can be recognized. */
@@ -87,7 +112,9 @@ export async function decideGate(input: GateInput): Promise<GateDecision> {
   if (failed.length === 0) {
     writeState(stateDir, input.sessionId, { bounces: 0 });
     logDecision('allow', 0);
-    return { action: 'allow', receipt };
+    // A receipt with zero checkable claims would be pure noise on every stop,
+    // so the allow only carries one when something was actually verified.
+    return verdicts.length > 0 ? { action: 'allow', receipt } : { action: 'allow' };
   }
 
   const state = readState(stateDir, input.sessionId);
