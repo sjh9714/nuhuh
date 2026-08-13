@@ -1,7 +1,32 @@
 import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { dirname } from 'node:path';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const GATE_COMMAND = 'npx --yes nuhuh gate';
+/**
+ * The hook is pinned to the version that installed it. An unpinned command
+ * would fetch whatever npm serves that day, so a tool that exists to make
+ * runs reproducible would itself run mutable code on every stop. Moving to a
+ * newer nuhuh is then a deliberate `nuhuh uninit && npx nuhuh@x.y.z init`.
+ */
+function installedVersion(): string {
+  try {
+    const here = dirname(fileURLToPath(import.meta.url));
+    // dist/index.js at runtime, src/gate/ in tests, so try both roots
+    for (const rel of ['../package.json', '../../package.json', '../../../package.json']) {
+      try {
+        const pkg = JSON.parse(readFileSync(join(here, rel), 'utf8')) as { name?: string; version?: string };
+        if (pkg.name === 'nuhuh' && pkg.version) return pkg.version;
+      } catch {
+        // try the next root
+      }
+    }
+  } catch {
+    // fall through
+  }
+  return 'latest';
+}
+
+const GATE_COMMAND = `npx --yes nuhuh@${installedVersion()} gate`;
 /** Long enough for a real test suite; the Stop hook default would cut it off. */
 const GATE_TIMEOUT_SECONDS = 600;
 
@@ -29,8 +54,11 @@ function readSettings(path: string): Settings {
   }
 }
 
+/** Matches our hook whatever version it was pinned to, including unpinned old ones. */
+const OURS = /\bnuhuh(?:@[\w.\-]+)?\s+gate\b/;
+
 function isOurs(hook: HookEntry): boolean {
-  return hook.command.includes('nuhuh gate');
+  return OURS.test(hook.command);
 }
 
 export function installHook(settingsPath: string): void {

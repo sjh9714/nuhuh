@@ -174,8 +174,11 @@ the complete list.
 - The gate cannot loop forever. It respects the hook's own recursion flag,
   caps bounces at 3, and stops immediately when the same claim fails the same
   way twice. Each deny message is two lines, so bounces stay cheap in context.
+- The hook `nuhuh init` writes is pinned to the exact version that installed
+  it, so the gate never fetches mutable code at stop time. Moving to a newer
+  nuhuh is a deliberate `nuhuh uninit` then `npx nuhuh@<version> init`.
 - `nuhuh init` backs up your settings file first, and `nuhuh uninit` restores
-  the hook entry cleanly. Pin a version with `npx nuhuh@0.1.3` if you prefer.
+  the hook entry cleanly whatever version it was pinned to.
 
 ## Requirements
 
